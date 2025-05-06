@@ -60,15 +60,25 @@ function Calendar({
           // Extract month names or years from children
           const options = React.Children.toArray(children)
             .filter(React.isValidElement)
-            .map(option => ({
-              value: option.props.value,
-              label: option.props.children,
-            }));
+            .map(option => {
+              if (React.isValidElement(option)) {
+                return {
+                  value: option.props.value,
+                  label: option.props.children,
+                };
+              }
+              return { value: "", label: "" };
+            })
+            .filter(option => option.value !== "");
 
           return (
             <select
-              value={value}
-              onChange={event => onChange && onChange(event.target.value)}
+              value={value as string}
+              onChange={(event) => {
+                if (onChange) {
+                  onChange(event.target.value);
+                }
+              }}
               className="px-2 py-1 bg-transparent border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring"
               {...props}
             >
@@ -88,4 +98,3 @@ function Calendar({
 Calendar.displayName = "Calendar";
 
 export { Calendar };
-

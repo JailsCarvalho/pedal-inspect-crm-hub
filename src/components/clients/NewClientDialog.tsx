@@ -60,11 +60,16 @@ export const NewClientDialog: React.FC<NewClientDialogProps> = ({
     try {
       console.log("Submitting form with values:", values);
       
+      // Format birthdate correctly for database insertion
+      const formattedBirthdate = values.birthdate 
+        ? format(values.birthdate, "yyyy-MM-dd") 
+        : null;
+      
       const { error } = await supabase.from("customers").insert({
         name: values.name,
         email: values.email || null,
         phone: values.phone || null,
-        birthdate: values.birthdate ? format(values.birthdate, "yyyy-MM-dd") : null,
+        birthdate: formattedBirthdate,
         address: values.address || null,
       });
 
@@ -178,7 +183,6 @@ export const NewClientDialog: React.FC<NewClientDialogProps> = ({
                           }
                           initialFocus
                           locale={ptBR}
-                          className={cn("p-3 pointer-events-auto")}
                           captionLayout="dropdown-buttons"
                           fromYear={1920}
                           toYear={2024}
