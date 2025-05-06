@@ -1,4 +1,3 @@
-
 export interface Customer {
   id: string;
   name: string;
@@ -19,6 +18,7 @@ export interface Inspection {
   nextInspectionDate: string;
   status: "scheduled" | "completed" | "pending" | "cancelled";
   notes?: string;
+  inspectionValue?: number;  // Added inspection value field
 }
 
 export interface SalesData {
@@ -27,12 +27,13 @@ export interface SalesData {
   sales: number;
 }
 
+export type NotificationType = "inspection" | "birthday" | "system";
+
 export interface NotificationItem {
   id: string;
   title: string;
   message: string;
-  type: "inspection" | "birthday" | "system" | "email";
+  type: NotificationType;
   read: boolean;
   date: string;
-  customer_id?: string; // Add this property to fix the TypeScript errors
 }

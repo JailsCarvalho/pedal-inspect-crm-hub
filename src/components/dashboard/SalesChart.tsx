@@ -10,61 +10,70 @@ interface SalesChartProps {
 }
 
 const SalesChart: React.FC<SalesChartProps> = ({ data, title = "Vendas e Inspeções" }) => {
+  // Check if data is empty or only has empty entries
+  const hasData = data.length > 0 && data.some(item => item.sales > 0 || item.inspections > 0);
+
   return (
     <Card className="col-span-3">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="pl-2">
-        <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="month" 
-              stroke="#888888"
-              fontSize={12}
-            />
-            <YAxis 
-              yAxisId="left"
-              stroke="#888888"
-              fontSize={12}
-              tickFormatter={(value) => `${value}`}
-            />
-            <YAxis 
-              yAxisId="right"
-              orientation="right"
-              stroke="#888888"
-              fontSize={12}
-              tickFormatter={(value) => `${value}€`}
-            />
-            <Tooltip 
-              formatter={(value, name) => {
-                if (name === "sales") return [`${value}€`, "Vendas"];
-                return [value, "Inspeções"];
-              }}
-            />
-            <Legend />
-            <Line
-              yAxisId="left"
-              type="monotone"
-              dataKey="inspections"
-              name="Inspeções"
-              stroke="#F97316"
-              strokeWidth={2}
-              dot={{ r: 4 }}
-              activeDot={{ r: 6 }}
-            />
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="sales"
-              name="Vendas"
-              stroke="#1A1F2C"
-              strokeWidth={2}
-              dot={{ r: 4 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {!hasData ? (
+          <div className="flex items-center justify-center h-[350px] text-muted-foreground">
+            Sem dados de vendas e inspeções disponíveis
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={350}>
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="month" 
+                stroke="#888888"
+                fontSize={12}
+              />
+              <YAxis 
+                yAxisId="left"
+                stroke="#888888"
+                fontSize={12}
+                tickFormatter={(value) => `${value}`}
+              />
+              <YAxis 
+                yAxisId="right"
+                orientation="right"
+                stroke="#888888"
+                fontSize={12}
+                tickFormatter={(value) => `${value}€`}
+              />
+              <Tooltip 
+                formatter={(value, name) => {
+                  if (name === "sales") return [`${value}€`, "Vendas"];
+                  return [value, "Inspeções"];
+                }}
+              />
+              <Legend />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="inspections"
+                name="Inspeções"
+                stroke="#F97316"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="sales"
+                name="Vendas"
+                stroke="#1A1F2C"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );

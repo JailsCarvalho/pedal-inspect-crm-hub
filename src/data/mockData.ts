@@ -62,6 +62,7 @@ export const mockInspections: Inspection[] = [
     nextInspectionDate: "2025-04-20",
     status: "completed",
     notes: "Troca de pastilhas de travão, ajuste de mudanças",
+    inspectionValue: 45,  // Added inspection value
   },
   {
     id: "2",
@@ -73,6 +74,7 @@ export const mockInspections: Inspection[] = [
     nextInspectionDate: "2025-05-01",
     status: "completed",
     notes: "Revisão completa, substituição de corrente",
+    inspectionValue: 60,  // Added inspection value
   },
   {
     id: "3",
@@ -83,6 +85,7 @@ export const mockInspections: Inspection[] = [
     date: "2024-05-10",
     nextInspectionDate: "2025-05-10",
     status: "scheduled",
+    inspectionValue: 35,  // Added inspection value
   },
   {
     id: "4",
@@ -107,21 +110,7 @@ export const mockInspections: Inspection[] = [
   },
 ];
 
-// Mock Sales Data for Chart
-export const mockSalesData: SalesData[] = [
-  { month: "Jan", inspections: 30, sales: 1500 },
-  { month: "Fev", inspections: 28, sales: 1400 },
-  { month: "Mar", inspections: 35, sales: 1800 },
-  { month: "Abr", inspections: 45, sales: 2200 },
-  { month: "Mai", inspections: 40, sales: 2000 },
-  { month: "Jun", inspections: 50, sales: 2500 },
-  { month: "Jul", inspections: 55, sales: 2700 },
-  { month: "Ago", inspections: 48, sales: 2400 },
-  { month: "Set", inspections: 42, sales: 2100 },
-  { month: "Out", inspections: 38, sales: 1900 },
-  { month: "Nov", inspections: 33, sales: 1700 },
-  { month: "Dez", inspections: 29, sales: 1600 },
-];
+// We're removing the mock sales data since we'll be using real inspection data
 
 // Mock Notifications
 export const mockNotifications: NotificationItem[] = [

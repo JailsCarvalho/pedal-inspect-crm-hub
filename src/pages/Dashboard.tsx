@@ -115,7 +115,8 @@ const Dashboard = () => {
             date,
             next_inspection_date,
             status,
-            notes
+            notes,
+            inspection_value
           `);
         
         if (inspectionsError) throw inspectionsError;
@@ -138,33 +139,47 @@ const Dashboard = () => {
             date: item.date,
             nextInspectionDate: item.next_inspection_date,
             status: typedStatus,
-            notes: item.notes || ""
+            notes: item.notes || "",
+            inspectionValue: item.inspection_value || 0
           };
         });
         
         setInspections(transformedInspections);
         
-        // Load sales data
-        const { data: salesData, error: salesError } = await supabase
-          .from("sales")
-          .select("*")
-          .order("created_at", { ascending: true });
+        // For sales data, we now use actual inspection values and don't use mock data
+        // Group inspections by month and calculate total value
+        const monthlyData: Record<string, { inspections: number, sales: number }> = {};
+        const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
         
-        if (salesError) throw salesError;
+        // Initialize with empty data for all months
+        monthNames.forEach(month => {
+          monthlyData[month] = { inspections: 0, sales: 0 };
+        });
         
-        if ((salesData || []).length === 0) {
-          // If no sales data, use mock data temporarily
-          setSalesData([
-            { month: "Jan", inspections: 10, sales: 2500 },
-            { month: "Feb", inspections: 15, sales: 3000 },
-            { month: "Mar", inspections: 20, sales: 4500 },
-            { month: "Apr", inspections: 25, sales: 5000 },
-            { month: "May", inspections: 22, sales: 4800 },
-            { month: "Jun", inspections: 30, sales: 6000 },
-          ]);
-        } else {
-          setSalesData(salesData);
-        }
+        // Fill with actual data
+        transformedInspections.forEach(inspection => {
+          if (inspection.date) {
+            const date = new Date(inspection.date);
+            const month = monthNames[date.getMonth()];
+            
+            if (month && monthlyData[month]) {
+              monthlyData[month].inspections += 1;
+              // Only add inspection value if it's completed
+              if (inspection.status === "completed" && inspection.inspectionValue) {
+                monthlyData[month].sales += Number(inspection.inspectionValue);
+              }
+            }
+          }
+        });
+        
+        // Convert to array format for the chart
+        const chartData: SalesData[] = Object.entries(monthlyData).map(([month, data]) => ({
+          month,
+          inspections: data.inspections,
+          sales: data.sales
+        }));
+        
+        setSalesData(chartData);
         
         // Load notifications
         await loadNotifications();
@@ -193,8 +208,8 @@ const Dashboard = () => {
   const pendingInspections = inspections.filter(
     (inspection) => inspection.status === "pending"
   ).length;
-  const salesSum = salesData.reduce(
-    (acc, item) => acc + Number(item.sales),
+  const inspectionValueSum = inspections.reduce(
+    (acc, item) => acc + Number(item.inspectionValue || 0),
     0
   );
 
@@ -229,9 +244,9 @@ const Dashboard = () => {
               icon={<Calendar className="h-4 w-4" />}
             />
             <StatCard
-              title="Vendas Totais"
-              value={`€${salesData.reduce((acc, item) => acc + Number(item.sales), 0)}`}
-              description="Este ano"
+              title="Valor de Inspeções"
+              value={`€${inspectionValueSum}`}
+              description="Total"
               icon={<ChartBar className="h-4 w-4" />}
             />
           </div>
