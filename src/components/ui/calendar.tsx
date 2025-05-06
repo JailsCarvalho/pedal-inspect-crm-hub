@@ -75,7 +75,7 @@ function Calendar({
               value={value as string}
               onChange={(e) => {
                 if (onChange) {
-                  // Use direct value rather than passing the event
+                  // Fix the type error by directly passing the string value
                   onChange(e.target.value);
                 }
               }}

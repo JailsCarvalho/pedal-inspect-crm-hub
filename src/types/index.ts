@@ -31,7 +31,7 @@ export interface NotificationItem {
   id: string;
   title: string;
   message: string;
-  type: "inspection" | "birthday" | "system";
+  type: "inspection" | "birthday" | "system" | "email";
   read: boolean;
   date: string;
 }

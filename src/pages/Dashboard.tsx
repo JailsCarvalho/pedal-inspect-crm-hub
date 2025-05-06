@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useCallback } from "react";
 import StatCard from "@/components/dashboard/StatCard";
 import SalesChart from "@/components/dashboard/SalesChart";
 import NotificationsCard from "@/components/dashboard/NotificationsCard";
-import { Users, Bike, Calendar, ChartBar } from "lucide-react";
+import { Users, Bike, Calendar, ChevronRight, ChartBar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Customer, Inspection, SalesData, NotificationItem } from "@/types";
@@ -14,6 +15,68 @@ const Dashboard = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  const loadNotifications = useCallback(async () => {
+    try {
+      const { data: notificationsData, error: notificationsError } = await supabase
+        .from("notifications")
+        .select("*")
+        .order("date", { ascending: false })
+        .limit(5);
+      
+      if (notificationsError) throw notificationsError;
+      
+      // Transform notification data to match our NotificationItem type
+      const transformedNotifications: NotificationItem[] = (notificationsData || []).map(notification => {
+        // Map the type to one of our allowed types
+        let typedType: "inspection" | "birthday" | "system" = "system";
+        
+        if (notification.type === "inspection" || notification.type === "birthday") {
+          typedType = notification.type as "inspection" | "birthday";
+        }
+        
+        return {
+          id: notification.id,
+          title: notification.title,
+          message: notification.message,
+          type: typedType,
+          read: notification.read,
+          date: notification.date
+        };
+      });
+      
+      setNotifications(transformedNotifications);
+      
+      // If no notifications, use mock data temporarily
+      if ((notificationsData || []).length === 0) {
+        setNotifications([
+          {
+            id: "1",
+            title: "Inspeção Agendada",
+            message: "Nova inspeção agendada para amanhã às 10:00",
+            type: "inspection",
+            read: false,
+            date: new Date().toISOString()
+          },
+          {
+            id: "2",
+            title: "Aniversário",
+            message: "João Silva faz aniversário hoje",
+            type: "birthday",
+            read: true,
+            date: new Date().toISOString()
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar as notificações."
+      });
+    }
+  }, [toast]);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -104,56 +167,7 @@ const Dashboard = () => {
         }
         
         // Load notifications
-        const { data: notificationsData, error: notificationsError } = await supabase
-          .from("notifications")
-          .select("*")
-          .order("date", { ascending: false })
-          .limit(5);
-        
-        if (notificationsError) throw notificationsError;
-        
-        // Transform notification data to match our NotificationItem type
-        const transformedNotifications: NotificationItem[] = (notificationsData || []).map(notification => {
-          // Map the type to one of our allowed types
-          let typedType: "inspection" | "birthday" | "system" = "system";
-          
-          if (notification.type === "inspection" || notification.type === "birthday") {
-            typedType = notification.type as "inspection" | "birthday";
-          }
-          
-          return {
-            id: notification.id,
-            title: notification.title,
-            message: notification.message,
-            type: typedType,
-            read: notification.read,
-            date: notification.date
-          };
-        });
-        
-        setNotifications(transformedNotifications);
-        
-        // If no notifications, use mock data temporarily
-        if ((notificationsData || []).length === 0) {
-          setNotifications([
-            {
-              id: "1",
-              title: "Inspeção Agendada",
-              message: "Nova inspeção agendada para amanhã às 10:00",
-              type: "inspection",
-              read: false,
-              date: new Date().toISOString()
-            },
-            {
-              id: "2",
-              title: "Aniversário",
-              message: "João Silva faz aniversário hoje",
-              type: "birthday",
-              read: true,
-              date: new Date().toISOString()
-            }
-          ]);
-        }
+        await loadNotifications();
         
       } catch (error) {
         console.error("Error loading dashboard data:", error);
@@ -168,7 +182,7 @@ const Dashboard = () => {
     };
     
     loadDashboardData();
-  }, [toast]);
+  }, [toast, loadNotifications]);
   
   // Calculate statistics
   const customerCount = customers.length;
@@ -227,7 +241,10 @@ const Dashboard = () => {
             <SalesChart data={salesData} />
             
             {/* Full-width notifications under the chart */}
-            <NotificationsCard notifications={notifications} />
+            <NotificationsCard 
+              notifications={notifications} 
+              onNotificationsUpdate={loadNotifications}
+            />
           </div>
         </>
       )}

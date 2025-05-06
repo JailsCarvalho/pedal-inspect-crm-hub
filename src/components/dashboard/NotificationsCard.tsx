@@ -1,21 +1,32 @@
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { NotificationItem } from "@/types";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Calendar, ChevronRight } from "lucide-react";
+import { Bell, Calendar, CheckCircle, ChevronRight, Mail, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
+import { NotificationService } from "@/services/NotificationService";
+import { useToast } from "@/hooks/use-toast";
 
 interface NotificationsCardProps {
   notifications: NotificationItem[];
+  onNotificationsUpdate?: () => void;
 }
 
-const NotificationsCard: React.FC<NotificationsCardProps> = ({ notifications }) => {
+const NotificationsCard: React.FC<NotificationsCardProps> = ({ 
+  notifications,
+  onNotificationsUpdate 
+}) => {
+  const { toast } = useToast();
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "birthday":
         return <Calendar className="h-4 w-4" />;
+      case "email":
+        return <Mail className="h-4 w-4" />;
       default:
         return <Bell className="h-4 w-4" />;
     }
@@ -35,10 +46,52 @@ const NotificationsCard: React.FC<NotificationsCardProps> = ({ notifications }) 
         return "bg-blue-100 text-blue-800";
       case "inspection":
         return "bg-amber-100 text-amber-800";
+      case "email":
+        return "bg-indigo-100 text-indigo-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  const handleMarkAsRead = async (id: string) => {
+    const success = await NotificationService.markAsRead(id);
+    
+    if (success) {
+      if (onNotificationsUpdate) {
+        onNotificationsUpdate();
+      }
+      toast({
+        title: "Notificação marcada como lida",
+      });
+    } else {
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar a notificação como lida.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    const success = await NotificationService.markAllAsRead();
+    
+    if (success) {
+      if (onNotificationsUpdate) {
+        onNotificationsUpdate();
+      }
+      toast({
+        title: "Todas as notificações marcadas como lidas",
+      });
+    } else {
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar as notificações como lidas.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <Card>
@@ -65,7 +118,20 @@ const NotificationsCard: React.FC<NotificationsCardProps> = ({ notifications }) 
                   <p className="text-xs text-muted-foreground mt-1">{formatDate(notification.date)}</p>
                 </div>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center">
+                {!notification.read && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => handleMarkAsRead(notification.id)}
+                    title="Marcar como lida"
+                    className="mr-1 h-8 w-8"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                )}
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
             </div>
           ))}
           
@@ -76,6 +142,19 @@ const NotificationsCard: React.FC<NotificationsCardProps> = ({ notifications }) 
           )}
         </div>
       </CardContent>
+      {unreadCount > 0 && (
+        <CardFooter className="pt-0">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="ml-auto"
+            onClick={handleMarkAllAsRead}
+          >
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Marcar todas como lidas
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 };
