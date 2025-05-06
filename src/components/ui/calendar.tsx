@@ -57,8 +57,11 @@ function Calendar({
         IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
         IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
         Dropdown: ({ value, onChange, children, ...props }) => {
-          // Extract month names or years from children
-          const options = React.Children.toArray(children)
+          // Garantir que children é um array de elementos React válidos
+          const childrenArray = React.Children.toArray(children);
+          
+          // Extrair opções de forma segura
+          const options = childrenArray
             .filter(React.isValidElement)
             .map((option) => {
               if (React.isValidElement(option)) {

@@ -2,17 +2,17 @@
 import React from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { UseFormReturn } from "react-hook-form";
 import * as z from "zod";
 
-// Use the same schema from NewClientDialog
+// Schema de validação do formulário
 const formSchema = z.object({
   name: z.string().min(3, { message: "Nome é obrigatório e deve ter pelo menos 3 caracteres" }),
   email: z.string().email({ message: "Email inválido" }).optional().or(z.literal("")),
@@ -50,7 +50,7 @@ export const ClientFormFields: React.FC<ClientFormFieldsProps> = ({ form }) => {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="email@exemplo.com" {...field} />
+                <Input type="email" placeholder="email@exemplo.com" {...field} value={field.value || ""} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -63,7 +63,7 @@ export const ClientFormFields: React.FC<ClientFormFieldsProps> = ({ form }) => {
             <FormItem>
               <FormLabel>Telefone</FormLabel>
               <FormControl>
-                <Input placeholder="(00) 00000-0000" {...field} />
+                <Input placeholder="(00) 00000-0000" {...field} value={field.value || ""} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -89,16 +89,16 @@ export const ClientFormFields: React.FC<ClientFormFieldsProps> = ({ form }) => {
                       )}
                     >
                       {field.value ? (
-                        format(field.value, "PPP", { locale: ptBR })
+                        format(field.value, "dd/MM/yyyy", { locale: ptBR })
                       ) : (
                         <span>Selecionar data</span>
                       )}
-                      <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
+                  <Calendar
                     mode="single"
                     selected={field.value || undefined}
                     onSelect={field.onChange}
@@ -109,7 +109,7 @@ export const ClientFormFields: React.FC<ClientFormFieldsProps> = ({ form }) => {
                     locale={ptBR}
                     captionLayout="dropdown-buttons"
                     fromYear={1920}
-                    toYear={2024}
+                    toYear={new Date().getFullYear()}
                   />
                 </PopoverContent>
               </Popover>
@@ -126,7 +126,7 @@ export const ClientFormFields: React.FC<ClientFormFieldsProps> = ({ form }) => {
           <FormItem>
             <FormLabel>Endereço</FormLabel>
             <FormControl>
-              <Input placeholder="Endereço completo" {...field} />
+              <Input placeholder="Endereço completo" {...field} value={field.value || ""} />
             </FormControl>
             <FormMessage />
           </FormItem>

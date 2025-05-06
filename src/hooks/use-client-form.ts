@@ -20,24 +20,40 @@ export const useClientForm = ({ onSuccess, onOpenChange }: UseClientFormProps) =
     try {
       console.log("Submitting form with values:", values);
       
-      // Format birthdate correctly for database insertion
-      const formattedBirthdate = values.birthdate 
-        ? format(values.birthdate, "yyyy-MM-dd") 
-        : null;
+      // Formatar a data para inserção no banco de dados
+      let formattedBirthdate = null;
+      if (values.birthdate) {
+        try {
+          formattedBirthdate = format(values.birthdate, "yyyy-MM-dd");
+          console.log("Formatted birthdate:", formattedBirthdate);
+        } catch (error) {
+          console.error("Error formatting birthdate:", error);
+        }
+      }
       
-      const { error } = await supabase.from("customers").insert({
+      // Dados para inserção
+      const customerData = {
         name: values.name,
         email: values.email || null,
         phone: values.phone || null,
         birthdate: formattedBirthdate,
         address: values.address || null,
-      });
+      };
+      
+      console.log("Inserting customer data:", customerData);
+      
+      const { error, data } = await supabase
+        .from("customers")
+        .insert(customerData)
+        .select();
 
       if (error) {
         console.error("Supabase error:", error);
         throw error;
       }
 
+      console.log("Customer created successfully:", data);
+      
       toast({
         title: "Cliente criado",
         description: "Cliente foi adicionado com sucesso",
