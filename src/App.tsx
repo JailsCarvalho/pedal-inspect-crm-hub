@@ -9,7 +9,6 @@ import NotFound from "./pages/NotFound";
 import Layout from "./components/layout/Layout";
 import Clients from "./pages/Clients";
 import Reports from "./pages/Reports";
-import Index from "./pages/Index";
 import Inspections from "./pages/Inspections";
 import TestEmail from "./pages/TestEmail";
 
@@ -19,8 +18,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Layout />}>
-            <Route index element={<Index />} />
-            <Route path="dashboard" element={<Dashboard />} />
+            <Route index element={<Dashboard />} />
             <Route path="clients" element={<Clients />} />
             <Route path="inspections" element={<Inspections />} />
             <Route path="reports" element={<Reports />} />
