@@ -72,9 +72,10 @@ const ClientsList = () => {
 
   const formatDate = (dateString: string) => {
     try {
+      if (!dateString) return "";
       return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
     } catch (e) {
-      return dateString;
+      return "";
     }
   };
 

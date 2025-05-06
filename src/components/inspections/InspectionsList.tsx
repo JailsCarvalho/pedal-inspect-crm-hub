@@ -96,9 +96,10 @@ const InspectionsList = () => {
 
   const formatDate = (dateString: string) => {
     try {
+      if (!dateString) return "";
       return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
     } catch (e) {
-      return dateString;
+      return "";
     }
   };
 
@@ -123,7 +124,7 @@ const InspectionsList = () => {
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Procurar inspeções..."
+            placeholder="Procurar inspeções por cliente, bicicleta..."
             className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
