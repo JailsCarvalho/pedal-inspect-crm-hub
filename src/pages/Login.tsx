@@ -32,7 +32,7 @@ const Login: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-secondary/50">
       <div className="w-full max-w-md p-4">
         <div className="mb-8 text-center">
-          <img src="/ambikes-logo.svg" alt="AMBikes Logo" className="h-16 mx-auto mb-4" />
+          <img src="https://rxtxyqrbciogdqehatbk.supabase.co/storage/v1/object/public/assets//Logo%20Ambikes.png" alt="AMBikes Logo" className="h-16 mx-auto mb-4" />
           <h2 className="text-2xl font-bold">CRM de Inspeções</h2>
         </div>
         
