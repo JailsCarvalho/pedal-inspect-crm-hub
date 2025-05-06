@@ -45,7 +45,7 @@ const Login: React.FC = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Login</CardTitle>
+            <CardTitle className="">Login</CardTitle>
             <CardDescription>
               Faça login para acessar o sistema de gestão da AMBikes
             </CardDescription>
@@ -74,7 +74,9 @@ const Login: React.FC = () => {
                   required
                 />
               </div>
-              
+              <div className="text-sm text-gray-500">
+                
+              </div>
             </CardContent>
             <CardFooter>
               <Button className="w-full" type="submit" disabled={isLoading}>
