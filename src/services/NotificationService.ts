@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationItem } from "@/types";
 import { toast } from "@/components/ui/sonner";
@@ -280,5 +279,122 @@ export class NotificationService {
       console.error("Error marking all notifications as read:", error);
       return false;
     }
+  }
+
+  /**
+   * Sends a test email to the specified address
+   */
+  static async sendTestEmail(to: string): Promise<boolean> {
+    const currentDate = new Date().toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    // Create a test notification in the database
+    const notification: Omit<NotificationItem, "id" | "date"> = {
+      title: "Email de Teste",
+      message: `Email de teste enviado para ${to} em ${currentDate}.`,
+      type: "email",
+      read: false
+    };
+    
+    // Prepare email content
+    const emailData: EmailNotification = {
+      to,
+      subject: "Email de Teste da Ambikes",
+      htmlContent: `
+        <!DOCTYPE html>
+        <html lang="pt">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Email de Teste</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333333;
+              margin: 0;
+              padding: 0;
+            }
+            .container {
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .header {
+              background-color: #FF7E00;
+              padding: 20px;
+              text-align: center;
+              color: white;
+              border-radius: 5px 5px 0 0;
+            }
+            .content {
+              background-color: #ffffff;
+              padding: 20px;
+              border-left: 1px solid #eeeeee;
+              border-right: 1px solid #eeeeee;
+            }
+            .footer {
+              background-color: #f5f5f5;
+              padding: 15px;
+              text-align: center;
+              font-size: 12px;
+              color: #666666;
+              border-radius: 0 0 5px 5px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📧 Email de Teste da Ambikes</h1>
+            </div>
+            <div class="content">
+              <p>Olá!</p>
+              
+              <p>Este é um email de teste do sistema de notificações da Ambikes.</p>
+              
+              <p>Data e hora do envio: <strong>${currentDate}</strong></p>
+              
+              <p>Este email confirma que o sistema de notificações está funcionando corretamente.</p>
+              
+              <p>Obrigado por utilizar nossos serviços!</p>
+              
+              <p>Atenciosamente,<br>
+              Equipe Ambikes</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} Ambikes. Todos os direitos reservados.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      textContent: `
+        Email de Teste da Ambikes
+        
+        Olá!
+        
+        Este é um email de teste do sistema de notificações da Ambikes.
+        
+        Data e hora do envio: ${currentDate}
+        
+        Este email confirma que o sistema de notificações está funcionando corretamente.
+        
+        Obrigado por utilizar nossos serviços!
+        
+        Atenciosamente,
+        Equipe Ambikes
+        
+        © ${new Date().getFullYear()} Ambikes. Todos os direitos reservados.
+      `
+    };
+    
+    // Create notification in database and send email
+    return this.notifyWithEmail(notification, emailData);
   }
 }

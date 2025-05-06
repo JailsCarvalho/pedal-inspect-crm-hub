@@ -1,43 +1,34 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import Layout from "./components/layout/Layout";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import "./App.css";
 
-import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
-import Clients from "./pages/Clients";
-import Inspections from "./pages/Inspections";
-import Reports from "./pages/Reports";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import Layout from "./components/layout/Layout";
+import Clients from "./pages/Clients";
+import Reports from "./pages/Reports";
+import Index from "./pages/Index";
+import Inspections from "./pages/Inspections";
+import TestEmail from "./pages/TestEmail"; // Add import for TestEmail
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="clients" element={<Clients />} />
-              <Route path="inspections" element={<Inspections />} />
-              <Route path="reports" element={<Reports />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Index />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="clients" element={<Clients />} />
+          <Route path="inspections" element={<Inspections />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="test-email" element={<TestEmail />} /> {/* Add new route */}
+        </Route>
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Router>
+  );
+}
 
 export default App;

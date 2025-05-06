@@ -34,4 +34,5 @@ export interface NotificationItem {
   type: "inspection" | "birthday" | "system" | "email";
   read: boolean;
   date: string;
+  customer_id?: string; // Add this property to fix the TypeScript errors
 }
