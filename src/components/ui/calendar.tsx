@@ -60,7 +60,7 @@ function Calendar({
           // Extract month names or years from children
           const options = React.Children.toArray(children)
             .filter(React.isValidElement)
-            .map(option => {
+            .map((option) => {
               if (React.isValidElement(option)) {
                 return {
                   value: option.props.value,
@@ -69,20 +69,20 @@ function Calendar({
               }
               return { value: "", label: "" };
             })
-            .filter(option => option.value !== "");
+            .filter((option) => option.value !== "");
 
           return (
             <select
               value={value as string}
-              onChange={(event) => {
+              onChange={(e) => {
                 if (onChange) {
-                  onChange(event.target.value);
+                  onChange(e.target.value);
                 }
               }}
               className="px-2 py-1 bg-transparent border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring"
               {...props}
             >
-              {options.map(option => (
+              {options.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
