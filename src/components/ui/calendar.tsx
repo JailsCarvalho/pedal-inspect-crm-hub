@@ -57,14 +57,14 @@ function Calendar({
         IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
         IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
         Dropdown: ({ value, onChange, children }) => {
-          // Fix the type issues by properly handling the children and onChange
+          // Fix the type issues by properly handling the children
           const options = React.Children.toArray(children)
-            .filter(React.isValidElement)
+            .filter((child): child is React.ReactElement => React.isValidElement(child))
             .map((option) => {
               if (React.isValidElement(option)) {
                 return {
-                  value: option.props.value,
-                  label: option.props.children,
+                  value: option.props.value as string,
+                  label: option.props.children as React.ReactNode,
                 };
               }
               return { value: "", label: "" };
@@ -76,6 +76,7 @@ function Calendar({
               value={value as string}
               onChange={(e) => {
                 if (onChange) {
+                  // Just pass the string value directly instead of the event
                   onChange(e.target.value);
                 }
               }}
