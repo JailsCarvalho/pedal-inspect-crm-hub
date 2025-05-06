@@ -51,22 +51,20 @@ export class NotificationService {
       if (error) {
         console.error("Error sending email notification:", error);
         toast("Erro ao enviar email", {
-          description: "Não foi possível enviar a notificação por email.",
-          variant: "destructive",
+          description: "Não foi possível enviar a notificação por email."
         });
         return false;
       }
 
       toast("Email enviado", {
-        description: "Notificação por email enviada com sucesso.",
+        description: "Notificação por email enviada com sucesso."
       });
       
       return true;
     } catch (error) {
       console.error("Error sending email notification:", error);
       toast("Erro ao enviar email", {
-        description: "Não foi possível enviar a notificação por email.",
-        variant: "destructive",
+        description: "Não foi possível enviar a notificação por email."
       });
       return false;
     }

@@ -75,8 +75,8 @@ function Calendar({
               value={value as string}
               onChange={(e) => {
                 if (onChange) {
-                  // Fix the type error by passing the value directly
-                  onChange(e.target.value);
+                  // Convertemos diretamente o valor da string, em vez de passar o evento
+                  onChange(e.target.value as any);
                 }
               }}
               className="px-2 py-1 bg-transparent border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring"
