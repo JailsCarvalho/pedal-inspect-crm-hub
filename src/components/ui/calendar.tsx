@@ -56,12 +56,9 @@ function Calendar({
       components={{
         IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
         IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
-        Dropdown: ({ value, onChange, children, ...props }) => {
-          // Garantir que children é um array de elementos React válidos
-          const childrenArray = React.Children.toArray(children);
-          
-          // Extrair opções de forma segura
-          const options = childrenArray
+        Dropdown: ({ value, onChange, children }) => {
+          // Fix the type issues by properly handling the children and onChange
+          const options = React.Children.toArray(children)
             .filter(React.isValidElement)
             .map((option) => {
               if (React.isValidElement(option)) {
@@ -83,7 +80,6 @@ function Calendar({
                 }
               }}
               className="px-2 py-1 bg-transparent border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              {...props}
             >
               {options.map((option) => (
                 <option key={option.value} value={option.value}>
