@@ -52,17 +52,27 @@ const InspectionsList = () => {
       if (error) throw error;
       
       // Transform data to match our Inspection type
-      const transformedData = data.map(item => ({
-        id: item.id,
-        customerId: item.customer_id,
-        customerName: item.customers?.name || "Unknown",
-        bikeModel: item.bikes?.model || "Unknown",
-        bikeSerialNumber: item.bikes?.serial_number || "",
-        date: item.date,
-        nextInspectionDate: item.next_inspection_date,
-        status: item.status,
-        notes: item.notes,
-      }));
+      const transformedData: Inspection[] = (data || []).map(item => {
+        // Ensure status is one of the allowed values
+        let typedStatus: "scheduled" | "completed" | "pending" | "cancelled" = "pending";
+        
+        if (item.status === "scheduled" || item.status === "completed" || 
+            item.status === "pending" || item.status === "cancelled") {
+          typedStatus = item.status as "scheduled" | "completed" | "pending" | "cancelled";
+        }
+        
+        return {
+          id: item.id,
+          customerId: item.customer_id,
+          customerName: item.customers?.name || "Unknown",
+          bikeModel: item.bikes?.model || "Unknown",
+          bikeSerialNumber: item.bikes?.serial_number || "",
+          date: item.date,
+          nextInspectionDate: item.next_inspection_date,
+          status: typedStatus,
+          notes: item.notes || ""
+        };
+      });
       
       setInspections(transformedData);
     } catch (error) {

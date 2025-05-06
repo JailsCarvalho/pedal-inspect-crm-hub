@@ -39,7 +39,18 @@ const ClientsList = () => {
       
       if (error) throw error;
       
-      setCustomers(data || []);
+      // Transform data to match our Customer type
+      const transformedData: Customer[] = (data || []).map(customer => ({
+        id: customer.id,
+        name: customer.name,
+        email: customer.email || "",
+        phone: customer.phone || "",
+        birthdate: customer.birthdate || "",
+        address: customer.address || "",
+        createdAt: customer.created_at
+      }));
+      
+      setCustomers(transformedData);
     } catch (error) {
       console.error("Error fetching customers:", error);
       toast({

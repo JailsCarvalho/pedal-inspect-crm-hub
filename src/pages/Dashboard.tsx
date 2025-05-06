@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import StatCard from "@/components/dashboard/StatCard";
 import SalesChart from "@/components/dashboard/SalesChart";
@@ -27,7 +26,19 @@ const Dashboard = () => {
           .select("*");
         
         if (customersError) throw customersError;
-        setCustomers(customersData || []);
+        
+        // Transform customer data to match our Customer type
+        const transformedCustomers: Customer[] = (customersData || []).map(customer => ({
+          id: customer.id,
+          name: customer.name,
+          email: customer.email || "",
+          phone: customer.phone || "",
+          birthdate: customer.birthdate || "",
+          address: customer.address || "",
+          createdAt: customer.created_at
+        }));
+        
+        setCustomers(transformedCustomers);
         
         // Load inspections
         const { data: inspectionsData, error: inspectionsError } = await supabase
@@ -46,19 +57,29 @@ const Dashboard = () => {
         
         if (inspectionsError) throw inspectionsError;
         
-        const transformedInspections = (inspectionsData || []).map(item => ({
-          id: item.id,
-          customerId: item.customer_id,
-          customerName: item.customers?.name || "Unknown",
-          bikeModel: item.bikes?.model || "Unknown",
-          bikeSerialNumber: item.bikes?.serial_number || "",
-          date: item.date,
-          nextInspectionDate: item.next_inspection_date,
-          status: item.status as "scheduled" | "completed" | "pending" | "cancelled",
-          notes: item.notes,
-        }));
+        const transformedInspections: Inspection[] = (inspectionsData || []).map(item => {
+          // Ensure status is one of the allowed values
+          let typedStatus: "scheduled" | "completed" | "pending" | "cancelled" = "pending";
+          
+          if (item.status === "scheduled" || item.status === "completed" || 
+              item.status === "pending" || item.status === "cancelled") {
+            typedStatus = item.status as "scheduled" | "completed" | "pending" | "cancelled";
+          }
+          
+          return {
+            id: item.id,
+            customerId: item.customer_id,
+            customerName: item.customers?.name || "Unknown",
+            bikeModel: item.bikes?.model || "Unknown",
+            bikeSerialNumber: item.bikes?.serial_number || "",
+            date: item.date,
+            nextInspectionDate: item.next_inspection_date,
+            status: typedStatus,
+            notes: item.notes || ""
+          };
+        });
         
-        setInspections(transformedInspections || []);
+        setInspections(transformedInspections);
         
         // Load sales data
         const { data: salesData, error: salesError } = await supabase
@@ -90,7 +111,27 @@ const Dashboard = () => {
           .limit(5);
         
         if (notificationsError) throw notificationsError;
-        setNotifications(notificationsData || []);
+        
+        // Transform notification data to match our NotificationItem type
+        const transformedNotifications: NotificationItem[] = (notificationsData || []).map(notification => {
+          // Map the type to one of our allowed types
+          let typedType: "inspection" | "birthday" | "system" = "system";
+          
+          if (notification.type === "inspection" || notification.type === "birthday") {
+            typedType = notification.type as "inspection" | "birthday";
+          }
+          
+          return {
+            id: notification.id,
+            title: notification.title,
+            message: notification.message,
+            type: typedType,
+            read: notification.read,
+            date: notification.date
+          };
+        });
+        
+        setNotifications(transformedNotifications);
         
         // If no notifications, use mock data temporarily
         if ((notificationsData || []).length === 0) {
@@ -158,24 +199,24 @@ const Dashboard = () => {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Clientes Registrados"
-              value={customerCount}
+              value={customers.length}
               icon={<Users className="h-4 w-4" />}
             />
             <StatCard
               title="Total de Inspeções"
-              value={inspectionCount}
-              description={`${completedInspections} concluídas, ${pendingInspections} pendentes`}
+              value={inspections.length}
+              description={`${inspections.filter(i => i.status === "completed").length} concluídas, ${inspections.filter(i => i.status === "pending").length} pendentes`}
               icon={<Bike className="h-4 w-4" />}
             />
             <StatCard
               title="Próximas Inspeções"
-              value={pendingInspections}
+              value={inspections.filter(i => i.status === "pending").length}
               description="Para serem agendadas"
               icon={<Calendar className="h-4 w-4" />}
             />
             <StatCard
               title="Vendas Totais"
-              value={`€${salesSum}`}
+              value={`€${salesData.reduce((acc, item) => acc + Number(item.sales), 0)}`}
               description="Este ano"
               icon={<ChartBar className="h-4 w-4" />}
             />
