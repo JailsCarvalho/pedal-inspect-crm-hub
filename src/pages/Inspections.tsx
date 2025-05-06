@@ -1,7 +1,6 @@
 
 import React from "react";
 import InspectionsList from "@/components/inspections/InspectionsList";
-import { mockInspections } from "@/data/mockData";
 
 const Inspections = () => {
   return (
@@ -11,7 +10,7 @@ const Inspections = () => {
       </div>
       
       <div className="border-t">
-        <InspectionsList inspections={mockInspections} />
+        <InspectionsList />
       </div>
     </div>
   );

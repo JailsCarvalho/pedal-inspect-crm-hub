@@ -1,7 +1,6 @@
 
 import React from "react";
 import ClientsList from "@/components/clients/ClientsList";
-import { mockCustomers } from "@/data/mockData";
 
 const Clients = () => {
   return (
@@ -11,7 +10,7 @@ const Clients = () => {
       </div>
       
       <div className="border-t">
-        <ClientsList customers={mockCustomers} />
+        <ClientsList />
       </div>
     </div>
   );

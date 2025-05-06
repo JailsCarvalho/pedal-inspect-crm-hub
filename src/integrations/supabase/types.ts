@@ -9,7 +9,178 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bikes: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          model: string
+          serial_number: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          model: string
+          serial_number?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          model?: string
+          serial_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bikes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address: string | null
+          birthdate: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          address?: string | null
+          birthdate?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          address?: string | null
+          birthdate?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      inspections: {
+        Row: {
+          bike_id: string
+          created_at: string
+          customer_id: string
+          date: string
+          id: string
+          next_inspection_date: string
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          bike_id: string
+          created_at?: string
+          customer_id: string
+          date?: string
+          id?: string
+          next_inspection_date: string
+          notes?: string | null
+          status?: string
+        }
+        Update: {
+          bike_id?: string
+          created_at?: string
+          customer_id?: string
+          date?: string
+          id?: string
+          next_inspection_date?: string
+          notes?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspections_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          customer_id: string | null
+          date: string
+          id: string
+          message: string
+          read: boolean
+          title: string
+          type: string
+        }
+        Insert: {
+          customer_id?: string | null
+          date?: string
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          type: string
+        }
+        Update: {
+          customer_id?: string | null
+          date?: string
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          created_at: string
+          id: string
+          inspections: number
+          month: string
+          sales: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inspections?: number
+          month: string
+          sales?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inspections?: number
+          month?: string
+          sales?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

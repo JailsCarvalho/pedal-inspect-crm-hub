@@ -1,26 +1,145 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import StatCard from "@/components/dashboard/StatCard";
 import SalesChart from "@/components/dashboard/SalesChart";
 import NotificationsCard from "@/components/dashboard/NotificationsCard";
-import { mockSalesData, mockCustomers, mockInspections, mockNotifications } from "@/data/mockData";
 import { Users, Bike, Calendar, ChartBar } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Customer, Inspection, SalesData, NotificationItem } from "@/types";
 
 const Dashboard = () => {
-  // Calculate some statistics
-  const customerCount = mockCustomers.length;
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [inspections, setInspections] = useState<Inspection[]>([]);
+  const [salesData, setSalesData] = useState<SalesData[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Load customers
+        const { data: customersData, error: customersError } = await supabase
+          .from("customers")
+          .select("*");
+        
+        if (customersError) throw customersError;
+        setCustomers(customersData || []);
+        
+        // Load inspections
+        const { data: inspectionsData, error: inspectionsError } = await supabase
+          .from("inspections")
+          .select(`
+            id,
+            customer_id,
+            customers(name),
+            bike_id,
+            bikes(model, serial_number),
+            date,
+            next_inspection_date,
+            status,
+            notes
+          `);
+        
+        if (inspectionsError) throw inspectionsError;
+        
+        const transformedInspections = (inspectionsData || []).map(item => ({
+          id: item.id,
+          customerId: item.customer_id,
+          customerName: item.customers?.name || "Unknown",
+          bikeModel: item.bikes?.model || "Unknown",
+          bikeSerialNumber: item.bikes?.serial_number || "",
+          date: item.date,
+          nextInspectionDate: item.next_inspection_date,
+          status: item.status as "scheduled" | "completed" | "pending" | "cancelled",
+          notes: item.notes,
+        }));
+        
+        setInspections(transformedInspections || []);
+        
+        // Load sales data
+        const { data: salesData, error: salesError } = await supabase
+          .from("sales")
+          .select("*")
+          .order("created_at", { ascending: true });
+        
+        if (salesError) throw salesError;
+        
+        if ((salesData || []).length === 0) {
+          // If no sales data, use mock data temporarily
+          setSalesData([
+            { month: "Jan", inspections: 10, sales: 2500 },
+            { month: "Feb", inspections: 15, sales: 3000 },
+            { month: "Mar", inspections: 20, sales: 4500 },
+            { month: "Apr", inspections: 25, sales: 5000 },
+            { month: "May", inspections: 22, sales: 4800 },
+            { month: "Jun", inspections: 30, sales: 6000 },
+          ]);
+        } else {
+          setSalesData(salesData);
+        }
+        
+        // Load notifications
+        const { data: notificationsData, error: notificationsError } = await supabase
+          .from("notifications")
+          .select("*")
+          .order("date", { ascending: false })
+          .limit(5);
+        
+        if (notificationsError) throw notificationsError;
+        setNotifications(notificationsData || []);
+        
+        // If no notifications, use mock data temporarily
+        if ((notificationsData || []).length === 0) {
+          setNotifications([
+            {
+              id: "1",
+              title: "Inspeção Agendada",
+              message: "Nova inspeção agendada para amanhã às 10:00",
+              type: "inspection",
+              read: false,
+              date: new Date().toISOString()
+            },
+            {
+              id: "2",
+              title: "Aniversário",
+              message: "João Silva faz aniversário hoje",
+              type: "birthday",
+              read: true,
+              date: new Date().toISOString()
+            }
+          ]);
+        }
+        
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Não foi possível carregar os dados do dashboard."
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadDashboardData();
+  }, [toast]);
   
-  const inspectionCount = mockInspections.length;
-  const completedInspections = mockInspections.filter(
+  // Calculate statistics
+  const customerCount = customers.length;
+  const inspectionCount = inspections.length;
+  const completedInspections = inspections.filter(
     (inspection) => inspection.status === "completed"
   ).length;
-  
-  const pendingInspections = mockInspections.filter(
+  const pendingInspections = inspections.filter(
     (inspection) => inspection.status === "pending"
   ).length;
-  
-  const salesSum = mockSalesData.reduce(
-    (acc, item) => acc + item.sales,
+  const salesSum = salesData.reduce(
+    (acc, item) => acc + Number(item.sales),
     0
   );
 
@@ -30,36 +149,47 @@ const Dashboard = () => {
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Clientes Registrados"
-          value={customerCount}
-          icon={<Users className="h-4 w-4" />}
-        />
-        <StatCard
-          title="Total de Inspeções"
-          value={inspectionCount}
-          description={`${completedInspections} concluídas, ${pendingInspections} pendentes`}
-          icon={<Bike className="h-4 w-4" />}
-        />
-        <StatCard
-          title="Próximas Inspeções"
-          value={pendingInspections}
-          description="Para serem agendadas"
-          icon={<Calendar className="h-4 w-4" />}
-        />
-        <StatCard
-          title="Vendas Totais"
-          value={`€${salesSum}`}
-          description="Este ano"
-          icon={<ChartBar className="h-4 w-4" />}
-        />
-      </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center h-48">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ambikes-orange"></div>
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Clientes Registrados"
+              value={customerCount}
+              icon={<Users className="h-4 w-4" />}
+            />
+            <StatCard
+              title="Total de Inspeções"
+              value={inspectionCount}
+              description={`${completedInspections} concluídas, ${pendingInspections} pendentes`}
+              icon={<Bike className="h-4 w-4" />}
+            />
+            <StatCard
+              title="Próximas Inspeções"
+              value={pendingInspections}
+              description="Para serem agendadas"
+              icon={<Calendar className="h-4 w-4" />}
+            />
+            <StatCard
+              title="Vendas Totais"
+              value={`€${salesSum}`}
+              description="Este ano"
+              icon={<ChartBar className="h-4 w-4" />}
+            />
+          </div>
 
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        <SalesChart data={mockSalesData} />
-        <NotificationsCard notifications={mockNotifications} />
-      </div>
+          <div className="grid gap-4">
+            {/* Full-width chart */}
+            <SalesChart data={salesData} />
+            
+            {/* Full-width notifications under the chart */}
+            <NotificationsCard notifications={notifications} />
+          </div>
+        </>
+      )}
     </div>
   );
 };

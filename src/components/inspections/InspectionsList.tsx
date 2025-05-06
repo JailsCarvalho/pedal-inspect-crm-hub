@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -15,19 +15,73 @@ import { Inspection } from "@/types";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar, Check, Clock, Search, X } from "lucide-react";
+import { NewInspectionDialog } from "./NewInspectionDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-interface InspectionsListProps {
-  inspections: Inspection[];
-}
-
-const InspectionsList: React.FC<InspectionsListProps> = ({ inspections }) => {
+const InspectionsList = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [inspections, setInspections] = useState<Inspection[]>([]);
+  const [isNewInspectionDialogOpen, setIsNewInspectionDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchInspections();
+  }, []);
+
+  const fetchInspections = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch inspections with customer information
+      const { data, error } = await supabase
+        .from("inspections")
+        .select(`
+          id, 
+          date, 
+          next_inspection_date, 
+          status, 
+          notes,
+          customer_id,
+          customers(name),
+          bike_id,
+          bikes(model, serial_number)
+        `)
+        .order("date", { ascending: false });
+      
+      if (error) throw error;
+      
+      // Transform data to match our Inspection type
+      const transformedData = data.map(item => ({
+        id: item.id,
+        customerId: item.customer_id,
+        customerName: item.customers?.name || "Unknown",
+        bikeModel: item.bikes?.model || "Unknown",
+        bikeSerialNumber: item.bikes?.serial_number || "",
+        date: item.date,
+        nextInspectionDate: item.next_inspection_date,
+        status: item.status,
+        notes: item.notes,
+      }));
+      
+      setInspections(transformedData);
+    } catch (error) {
+      console.error("Error fetching inspections:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar as inspeções. Tente novamente."
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredInspections = inspections.filter(
     (inspection) =>
       inspection.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       inspection.bikeModel.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      inspection.bikeSerialNumber.toLowerCase().includes(searchQuery.toLowerCase())
+      (inspection.bikeSerialNumber && inspection.bikeSerialNumber.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const formatDate = (dateString: string) => {
@@ -65,7 +119,9 @@ const InspectionsList: React.FC<InspectionsListProps> = ({ inspections }) => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button className="ml-2">Nova Inspeção</Button>
+        <Button className="ml-2" onClick={() => setIsNewInspectionDialogOpen(true)}>
+          Nova Inspeção
+        </Button>
       </div>
 
       <div className="rounded-md border">
@@ -81,15 +137,23 @@ const InspectionsList: React.FC<InspectionsListProps> = ({ inspections }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredInspections.length > 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  Carregando inspeções...
+                </TableCell>
+              </TableRow>
+            ) : filteredInspections.length > 0 ? (
               filteredInspections.map((inspection) => (
                 <TableRow key={inspection.id}>
                   <TableCell className="font-medium">{inspection.customerName}</TableCell>
                   <TableCell>
                     {inspection.bikeModel}
-                    <div className="text-xs text-muted-foreground">
-                      SN: {inspection.bikeSerialNumber}
-                    </div>
+                    {inspection.bikeSerialNumber && (
+                      <div className="text-xs text-muted-foreground">
+                        SN: {inspection.bikeSerialNumber}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>{formatDate(inspection.date)}</TableCell>
                   <TableCell>{formatDate(inspection.nextInspectionDate)}</TableCell>
@@ -111,6 +175,12 @@ const InspectionsList: React.FC<InspectionsListProps> = ({ inspections }) => {
           </TableBody>
         </Table>
       </div>
+
+      <NewInspectionDialog
+        open={isNewInspectionDialogOpen}
+        onOpenChange={setIsNewInspectionDialogOpen}
+        onInspectionCreated={fetchInspections}
+      />
     </div>
   );
 };

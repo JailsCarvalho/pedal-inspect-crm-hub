@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -14,19 +14,49 @@ import { Customer } from "@/types";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar, Mail, PhoneCall, Search } from "lucide-react";
+import { NewClientDialog } from "./NewClientDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-interface ClientsListProps {
-  customers: Customer[];
-}
-
-const ClientsList: React.FC<ClientsListProps> = ({ customers }) => {
+const ClientsList = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isNewClientDialogOpen, setIsNewClientDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("*")
+        .order("name");
+      
+      if (error) throw error;
+      
+      setCustomers(data || []);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar os clientes. Tente novamente."
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredCustomers = customers.filter(
     (customer) =>
-      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.phone.includes(searchQuery)
+      customer.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.phone?.includes(searchQuery)
   );
 
   const formatDate = (dateString: string) => {
@@ -49,7 +79,9 @@ const ClientsList: React.FC<ClientsListProps> = ({ customers }) => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button className="ml-2">Novo Cliente</Button>
+        <Button className="ml-2" onClick={() => setIsNewClientDialogOpen(true)}>
+          Novo Cliente
+        </Button>
       </div>
 
       <div className="rounded-md border">
@@ -65,27 +97,39 @@ const ClientsList: React.FC<ClientsListProps> = ({ customers }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredCustomers.length > 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  Carregando clientes...
+                </TableCell>
+              </TableRow>
+            ) : filteredCustomers.length > 0 ? (
               filteredCustomers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm">{customer.email}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <PhoneCall className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm">{customer.phone}</span>
-                      </div>
+                      {customer.email && (
+                        <div className="flex items-center gap-1">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm">{customer.email}</span>
+                        </div>
+                      )}
+                      {customer.phone && (
+                        <div className="flex items-center gap-1">
+                          <PhoneCall className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm">{customer.phone}</span>
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3 text-muted-foreground" />
-                      <span>{formatDate(customer.birthdate)}</span>
-                    </div>
+                    {customer.birthdate && (
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        <span>{formatDate(customer.birthdate)}</span>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>{customer.address}</TableCell>
                   <TableCell>{formatDate(customer.createdAt)}</TableCell>
@@ -106,6 +150,12 @@ const ClientsList: React.FC<ClientsListProps> = ({ customers }) => {
           </TableBody>
         </Table>
       </div>
+
+      <NewClientDialog 
+        open={isNewClientDialogOpen} 
+        onOpenChange={setIsNewClientDialogOpen}
+        onClientCreated={fetchCustomers}
+      />
     </div>
   );
 };

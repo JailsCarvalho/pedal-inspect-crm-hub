@@ -41,13 +41,13 @@ const NotificationsCard: React.FC<NotificationsCardProps> = ({ notifications }) 
   };
 
   return (
-    <Card className="col-span-1">
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-md font-medium">Notificações</CardTitle>
+        <CardTitle className="text-md font-medium">Notificações Recentes</CardTitle>
         <Badge variant="outline">{notifications.length}</Badge>
       </CardHeader>
       <CardContent className="px-0">
-        <div className="space-y-1">
+        <div className="grid gap-1 md:grid-cols-2 lg:grid-cols-3">
           {notifications.map((notification) => (
             <div
               key={notification.id}
@@ -68,6 +68,12 @@ const NotificationsCard: React.FC<NotificationsCardProps> = ({ notifications }) 
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
           ))}
+          
+          {notifications.length === 0 && (
+            <div className="col-span-full flex items-center justify-center p-6 text-muted-foreground">
+              Não há notificações recentes.
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
