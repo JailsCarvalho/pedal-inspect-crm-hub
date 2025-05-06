@@ -12,7 +12,7 @@ import { Bike, Calendar, ChartBar, Users } from "lucide-react";
 
 const AppSidebar: React.FC = () => {
   return (
-    <Sidebar>
+    <Sidebar className="bg-[#111]">
       <SidebarHeader className="flex items-center justify-center py-6">
         <img src="https://rxtxyqrbciogdqehatbk.supabase.co/storage/v1/object/public/assets//Logo%20Ambikes.png" alt="AMBikes Logo" className="h-10" />
       </SidebarHeader>
