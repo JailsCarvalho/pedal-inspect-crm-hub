@@ -27,7 +27,7 @@ const formSchema = z.object({
   name: z.string().min(3, { message: "Nome é obrigatório e deve ter pelo menos 3 caracteres" }),
   email: z.string().email({ message: "Email inválido" }).optional().or(z.literal("")),
   phone: z.string().optional(),
-  birthdate: z.date().optional(),
+  birthdate: z.date().optional().nullable(),
   address: z.string().optional(),
 });
 
@@ -50,6 +50,7 @@ export const NewClientDialog: React.FC<NewClientDialogProps> = ({
       email: "",
       phone: "",
       address: "",
+      birthdate: null,
     },
   });
 
@@ -57,6 +58,8 @@ export const NewClientDialog: React.FC<NewClientDialogProps> = ({
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      console.log("Submitting form with values:", values);
+      
       const { error } = await supabase.from("customers").insert({
         name: values.name,
         email: values.email || null,
@@ -66,6 +69,7 @@ export const NewClientDialog: React.FC<NewClientDialogProps> = ({
       });
 
       if (error) {
+        console.error("Supabase error:", error);
         throw error;
       }
 
@@ -167,7 +171,7 @@ export const NewClientDialog: React.FC<NewClientDialogProps> = ({
                       <PopoverContent className="w-auto p-0" align="start">
                         <CalendarComponent
                           mode="single"
-                          selected={field.value}
+                          selected={field.value || undefined}
                           onSelect={field.onChange}
                           disabled={(date) =>
                             date > new Date() || date < new Date("1900-01-01")
@@ -175,6 +179,9 @@ export const NewClientDialog: React.FC<NewClientDialogProps> = ({
                           initialFocus
                           locale={ptBR}
                           className={cn("p-3 pointer-events-auto")}
+                          captionLayout="dropdown-buttons"
+                          fromYear={1920}
+                          toYear={2024}
                         />
                       </PopoverContent>
                     </Popover>
