@@ -40,13 +40,12 @@ const Login: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-secondary/50">
       <div className="w-full max-w-md p-4">
         <div className="mb-8 text-center">
-          <img src="https://rxtxyqrbciogdqehatbk.supabase.co/storage/v1/object/public/assets//Logo%20Ambikes.png" alt="AMBikes Logo" className="h-16 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold">CRM de Inspeções</h2>
+          <img src="https://rxtxyqrbciogdqehatbk.supabase.co/storage/v1/object/public/assets//Imagem%201631x422.png" alt="AMBikes Logo" className="h-16 mx-auto mb-4" />
         </div>
         
         <Card>
           <CardHeader>
-            <CardTitle>Login</CardTitle>
+            <CardTitle className="text-center">Login</CardTitle>
             <CardDescription>
               Faça login para acessar o sistema de gestão da AMBikes
             </CardDescription>
@@ -75,9 +74,7 @@ const Login: React.FC = () => {
                   required
                 />
               </div>
-              <div className="text-sm text-gray-500">
-                (Use admin@ambikes.pt / admin para demonstração)
-              </div>
+              
             </CardContent>
             <CardFooter>
               <Button className="w-full" type="submit" disabled={isLoading}>
