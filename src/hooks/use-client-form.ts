@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -28,9 +29,18 @@ export const useClientForm = ({ onSuccess, onOpenChange }: UseClientFormProps) =
           
           if (values.birthdate instanceof Date) {
             birthdateObj = values.birthdate;
-          } else if (typeof values.birthdate === 'object' && values.birthdate !== null && '_type' in values.birthdate && values.birthdate._type === 'Date') {
-            // Handle serialized date objects that might come from the form
-            birthdateObj = new Date((values.birthdate as any).value?.iso || (values.birthdate as any).value?.value);
+          } else if (typeof values.birthdate === 'object' && values.birthdate !== null) {
+            // Handle possible serialized date object structures
+            // Since we can't rely on _type property, attempt to construct based on known properties
+            const dateValue = values.birthdate as any;
+            if (dateValue.value && (typeof dateValue.value === 'string' || typeof dateValue.value === 'number')) {
+              birthdateObj = new Date(dateValue.value);
+            } else if (dateValue.iso) {
+              birthdateObj = new Date(dateValue.iso);
+            } else {
+              // Last resort - try to create a date from the object directly
+              birthdateObj = new Date(values.birthdate as any);
+            }
           } else {
             // Otherwise try to create a date from whatever we have
             birthdateObj = new Date(values.birthdate as any);

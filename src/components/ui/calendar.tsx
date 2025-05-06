@@ -61,13 +61,12 @@ function Calendar({
           const options = React.Children.toArray(children)
             .filter((child): child is React.ReactElement => React.isValidElement(child))
             .map((option) => {
-              if (React.isValidElement(option)) {
-                return {
-                  value: option.props.value as string,
-                  label: option.props.children as React.ReactNode,
-                };
-              }
-              return { value: "", label: "" };
+              // We've already filtered to ReactElement types above
+              const optionProps = option.props as { value: string, children: React.ReactNode };
+              return {
+                value: optionProps.value,
+                label: optionProps.children,
+              };
             })
             .filter((option) => option.value !== "");
 
@@ -76,7 +75,7 @@ function Calendar({
               value={value as string}
               onChange={(e) => {
                 if (onChange) {
-                  // Just pass the string value directly instead of the event
+                  // Use direct value rather than passing the event
                   onChange(e.target.value);
                 }
               }}
