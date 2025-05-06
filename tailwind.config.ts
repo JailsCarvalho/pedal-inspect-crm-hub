@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -66,7 +65,7 @@ export default {
 				ambikes: {
 					orange: '#F97316',
 					light: '#FFFFFF',
-					dark: '#1A1F2C'
+					dark: '#000000'
 				}
 			},
 			borderRadius: {
