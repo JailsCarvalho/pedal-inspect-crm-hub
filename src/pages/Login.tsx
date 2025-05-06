@@ -45,7 +45,7 @@ const Login: React.FC = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle className="text-center">Login</CardTitle>
+            <CardTitle>Login</CardTitle>
             <CardDescription>
               Faça login para acessar o sistema de gestão da AMBikes
             </CardDescription>
