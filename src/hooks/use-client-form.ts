@@ -24,7 +24,11 @@ export const useClientForm = ({ onSuccess, onOpenChange }: UseClientFormProps) =
       let formattedBirthdate = null;
       if (values.birthdate) {
         try {
-          formattedBirthdate = format(values.birthdate, "yyyy-MM-dd");
+          // Ensure we have a valid date object
+          const birthdateObj = values.birthdate instanceof Date ? 
+            values.birthdate : new Date(values.birthdate);
+          
+          formattedBirthdate = format(birthdateObj, "yyyy-MM-dd");
           console.log("Formatted birthdate:", formattedBirthdate);
         } catch (error) {
           console.error("Error formatting birthdate:", error);
