@@ -5,10 +5,11 @@ import { Customer, Inspection } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Calendar, Mail, PhoneCall, Bike } from "lucide-react";
-import { format } from "date-fns";
+import { ArrowLeft, Calendar, Mail, PhoneCall, Bike, Gift, MessageSquare } from "lucide-react";
+import { format, parse, differenceInDays, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,9 @@ const ClientDetail = () => {
   const [client, setClient] = useState<Customer | null>(null);
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBirthday, setIsBirthday] = useState(false);
+  const [nextBirthdayDate, setNextBirthdayDate] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -42,6 +46,40 @@ const ClientDetail = () => {
         };
         
         setClient(customer);
+        
+        // Check if today is the client's birthday or close to it
+        if (customer.birthdate) {
+          const today = new Date();
+          
+          // Parse the birthdate string to a date object
+          const birthdateThisYear = parse(
+            `${today.getFullYear()}-${customer.birthdate.split('T')[0].substring(5)}`,
+            'yyyy-MM-dd',
+            new Date()
+          );
+
+          if (isValid(birthdateThisYear)) {
+            // Check if the birthday is today
+            const daysDiff = differenceInDays(birthdateThisYear, today);
+
+            if (daysDiff === 0) {
+              setIsBirthday(true);
+              setNextBirthdayDate("hoje");
+            } else if (daysDiff > 0 && daysDiff <= 7) {
+              // Birthday is within the next week
+              setNextBirthdayDate(`em ${daysDiff} ${daysDiff === 1 ? 'dia' : 'dias'}`);
+            } else if (daysDiff < 0) {
+              // Birthday already passed this year, show for next year
+              const birthdateNextYear = parse(
+                `${today.getFullYear() + 1}-${customer.birthdate.split('T')[0].substring(5)}`,
+                'yyyy-MM-dd',
+                new Date()
+              );
+              const daysUntilNextBirthday = differenceInDays(birthdateNextYear, today);
+              setNextBirthdayDate(`em ${daysUntilNextBirthday} dias`);
+            }
+          }
+        }
         
         // Fetch client's inspections
         const { data: inspectionsData, error: inspectionsError } = await supabase
@@ -112,6 +150,34 @@ const ClientDetail = () => {
     }
   };
 
+  const handleSendBirthdayMessage = () => {
+    if (!client?.phone) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar a mensagem. Telefone do cliente não encontrado.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Format the phone number (remove any non-digit characters)
+    const formattedPhone = client.phone.replace(/\D/g, "");
+    
+    // Create the birthday message
+    const message = `Olá ${client.name}! A equipe da Ambikes deseja um Feliz Aniversário! 🎂🎉 Como presente especial, oferecemos 10% de desconto na próxima inspeção da sua bicicleta. Esperamos vê-lo(a) em breve!`;
+    
+    // Create WhatsApp URL
+    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+    
+    // Open WhatsApp in a new window
+    window.open(whatsappUrl, "_blank");
+    
+    toast({
+      title: "WhatsApp aberto",
+      description: "Mensagem de aniversário preparada para envio."
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -146,7 +212,30 @@ const ClientDetail = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>{client.name}</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center">
+              {client.name}
+              {isBirthday && (
+                <Badge className="ml-2 bg-pink-100 text-pink-800 hover:bg-pink-200">
+                  <Gift className="h-3 w-3 mr-1" /> Aniversário hoje!
+                </Badge>
+              )}
+              {nextBirthdayDate && !isBirthday && (
+                <Badge className="ml-2 bg-purple-100 text-purple-800 hover:bg-purple-200">
+                  <Gift className="h-3 w-3 mr-1" /> Aniversário {nextBirthdayDate}
+                </Badge>
+              )}
+            </CardTitle>
+            {client.phone && (
+              <Button 
+                onClick={handleSendBirthdayMessage}
+                className="bg-green-600 hover:bg-green-700 flex items-center"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" /> 
+                Enviar Mensagem de Aniversário
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

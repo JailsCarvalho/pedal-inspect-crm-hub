@@ -12,12 +12,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Customer } from "@/types";
-import { format } from "date-fns";
+import { format, parse, isValid, differenceInDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Mail, PhoneCall, Search } from "lucide-react";
+import { Calendar, Mail, PhoneCall, Search, Gift } from "lucide-react";
 import { NewClientDialog } from "./NewClientDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 const ClientsList = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -81,6 +82,113 @@ const ClientsList = () => {
     }
   };
 
+  const isBirthdayToday = (birthdate: string): boolean => {
+    if (!birthdate) return false;
+    
+    try {
+      const today = new Date();
+      // Try to parse the date - it might be in different formats
+      let birthdateDate;
+      try {
+        // Try ISO format first
+        birthdateDate = parseISO(birthdate);
+      } catch {
+        try {
+          // Try another common format
+          birthdateDate = parse(birthdate, "yyyy-MM-dd", new Date());
+        } catch {
+          return false;
+        }
+      }
+      
+      if (!isValid(birthdateDate)) return false;
+      
+      return (
+        birthdateDate.getDate() === today.getDate() &&
+        birthdateDate.getMonth() === today.getMonth()
+      );
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const isBirthdaySoon = (birthdate: string): boolean => {
+    if (!birthdate) return false;
+    
+    try {
+      const today = new Date();
+      // Try to parse the date
+      let birthdateDate;
+      try {
+        birthdateDate = parseISO(birthdate);
+      } catch {
+        try {
+          birthdateDate = parse(birthdate, "yyyy-MM-dd", new Date());
+        } catch {
+          return false;
+        }
+      }
+      
+      if (!isValid(birthdateDate)) return false;
+      
+      // Create date for this year's birthday
+      const birthdateThisYear = new Date(
+        today.getFullYear(),
+        birthdateDate.getMonth(),
+        birthdateDate.getDate()
+      );
+      
+      // If the birthday has passed this year, check for next year
+      if (birthdateThisYear < today) {
+        birthdateThisYear.setFullYear(birthdateThisYear.getFullYear() + 1);
+      }
+      
+      const daysDifference = differenceInDays(birthdateThisYear, today);
+      
+      // Return true if birthday is within the next 7 days
+      return daysDifference > 0 && daysDifference <= 7;
+    } catch (e) {
+      return false;
+    }
+  };
+  
+  const getDaysUntilBirthday = (birthdate: string): number | null => {
+    if (!birthdate) return null;
+    
+    try {
+      const today = new Date();
+      // Try to parse the date
+      let birthdateDate;
+      try {
+        birthdateDate = parseISO(birthdate);
+      } catch {
+        try {
+          birthdateDate = parse(birthdate, "yyyy-MM-dd", new Date());
+        } catch {
+          return null;
+        }
+      }
+      
+      if (!isValid(birthdateDate)) return null;
+      
+      // Create date for this year's birthday
+      const birthdateThisYear = new Date(
+        today.getFullYear(),
+        birthdateDate.getMonth(),
+        birthdateDate.getDate()
+      );
+      
+      // If the birthday has passed this year, check for next year
+      if (birthdateThisYear < today) {
+        birthdateThisYear.setFullYear(birthdateThisYear.getFullYear() + 1);
+      }
+      
+      return differenceInDays(birthdateThisYear, today);
+    } catch (e) {
+      return null;
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center mb-4">
@@ -119,8 +227,25 @@ const ClientsList = () => {
               </TableRow>
             ) : filteredCustomers.length > 0 ? (
               filteredCustomers.map((customer) => (
-                <TableRow key={customer.id}>
-                  <TableCell className="font-medium">{customer.name}</TableCell>
+                <TableRow 
+                  key={customer.id}
+                  className={isBirthdayToday(customer.birthdate) ? "bg-pink-50" : ""}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex items-center">
+                      {customer.name}
+                      {isBirthdayToday(customer.birthdate) && (
+                        <Badge className="ml-2 bg-pink-100 text-pink-800 hover:bg-pink-200">
+                          <Gift className="h-3 w-3 mr-1" /> Hoje!
+                        </Badge>
+                      )}
+                      {!isBirthdayToday(customer.birthdate) && isBirthdaySoon(customer.birthdate) && (
+                        <Badge className="ml-2 bg-purple-100 text-purple-800 hover:bg-purple-200">
+                          <Gift className="h-3 w-3 mr-1" /> Em {getDaysUntilBirthday(customer.birthdate)} dias
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       {customer.email && (
