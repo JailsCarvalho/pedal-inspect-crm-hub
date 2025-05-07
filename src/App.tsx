@@ -11,6 +11,8 @@ import Clients from "./pages/Clients";
 import Reports from "./pages/Reports";
 import Inspections from "./pages/Inspections";
 import TestEmail from "./pages/TestEmail";
+import ClientDetail from "./pages/ClientDetail";
+import InspectionDetail from "./pages/InspectionDetail";
 
 function App() {
   return (
@@ -20,7 +22,9 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="clients" element={<Clients />} />
+            <Route path="clients/:id" element={<ClientDetail />} />
             <Route path="inspections" element={<Inspections />} />
+            <Route path="inspections/:id" element={<InspectionDetail />} />
             <Route path="reports" element={<Reports />} />
             <Route path="test-email" element={<TestEmail />} />
           </Route>

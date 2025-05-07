@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -24,6 +25,7 @@ const ClientsList = () => {
   const [isNewClientDialogOpen, setIsNewClientDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCustomers();
@@ -146,7 +148,11 @@ const ClientsList = () => {
                   <TableCell>{customer.address}</TableCell>
                   <TableCell>{formatDate(customer.createdAt)}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => navigate(`/clients/${customer.id}`)}
+                    >
                       Detalhes
                     </Button>
                   </TableCell>

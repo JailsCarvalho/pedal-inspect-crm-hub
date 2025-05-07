@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -25,6 +26,7 @@ const InspectionsList = () => {
   const [isNewInspectionDialogOpen, setIsNewInspectionDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchInspections();
@@ -42,6 +44,7 @@ const InspectionsList = () => {
           next_inspection_date, 
           status, 
           notes,
+          inspection_value,
           customer_id,
           customers(name),
           bike_id,
@@ -70,7 +73,8 @@ const InspectionsList = () => {
           date: item.date,
           nextInspectionDate: item.next_inspection_date,
           status: typedStatus,
-          notes: item.notes || ""
+          notes: item.notes || "",
+          inspectionValue: item.inspection_value
         };
       });
       
@@ -170,7 +174,11 @@ const InspectionsList = () => {
                   <TableCell>{formatDate(inspection.nextInspectionDate)}</TableCell>
                   <TableCell>{getStatusBadge(inspection.status)}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => navigate(`/inspections/${inspection.id}`)}
+                    >
                       Detalhes
                     </Button>
                   </TableCell>
