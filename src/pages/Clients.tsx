@@ -17,13 +17,7 @@ const Clients = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Clientes</h2>
-        <Button 
-          onClick={() => setOpenNewClientDialog(true)}
-          className="flex items-center gap-2"
-        >
-          <PlusCircle className="h-4 w-4" />
-          Novo Cliente
-        </Button>
+        
       </div>
       
       <div className="border-t">
