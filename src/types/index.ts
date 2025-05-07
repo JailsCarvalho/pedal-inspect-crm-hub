@@ -19,7 +19,19 @@ export interface Inspection {
   nextInspectionDate: string;
   status: "scheduled" | "completed" | "pending" | "cancelled";
   notes?: string;
-  inspectionValue?: number;  // Added inspection value field
+  inspectionValue?: number;
+}
+
+export interface Sale {
+  id: string;
+  customerId: string;
+  customerName: string;
+  productName: string;
+  bikeModel?: string;
+  bikeSerialNumber?: string;
+  price: number;
+  date: string;
+  notes?: string;
 }
 
 export interface SalesData {
@@ -37,5 +49,5 @@ export interface NotificationItem {
   type: NotificationType;
   read: boolean;
   date: string;
-  customer_id?: string; // Added customer_id field
+  customer_id?: string;
 }

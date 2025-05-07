@@ -8,7 +8,7 @@ import {
   SidebarGroupContent,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import { Bike, Calendar, ChartBar, Users } from "lucide-react";
+import { Bike, Calendar, ChartBar, ShoppingCart, Users } from "lucide-react";
 
 const AppSidebar: React.FC = () => {
   return (
@@ -58,6 +58,19 @@ const AppSidebar: React.FC = () => {
               >
                 <Bike className="h-5 w-5" />
                 <span>Inspeções</span>
+              </NavLink>
+              <NavLink 
+                to="/sales" 
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                    isActive
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  }`
+                }
+              >
+                <ShoppingCart className="h-5 w-5" />
+                <span>Vendas</span>
               </NavLink>
               <NavLink 
                 to="/reports" 

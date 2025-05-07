@@ -13,6 +13,7 @@ import Inspections from "./pages/Inspections";
 import TestEmail from "./pages/TestEmail";
 import ClientDetail from "./pages/ClientDetail";
 import InspectionDetail from "./pages/InspectionDetail";
+import Sales from "./pages/Sales";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             <Route path="clients/:id" element={<ClientDetail />} />
             <Route path="inspections" element={<Inspections />} />
             <Route path="inspections/:id" element={<InspectionDetail />} />
+            <Route path="sales" element={<Sales />} />
             <Route path="reports" element={<Reports />} />
             <Route path="test-email" element={<TestEmail />} />
           </Route>
