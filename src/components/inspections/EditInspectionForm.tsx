@@ -72,7 +72,7 @@ const EditInspectionForm = ({
           name="inspectionValue"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Valor da Inspeção (R$)</FormLabel>
+              <FormLabel>Valor da Inspeção (€)</FormLabel>
               <FormControl>
                 <Input
                   placeholder="0.00"
