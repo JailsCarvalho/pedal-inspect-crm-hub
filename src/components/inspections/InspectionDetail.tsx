@@ -5,17 +5,23 @@ import { Inspection } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { ArrowLeft, Calendar, User, Bike, Wrench, CreditCard } from "lucide-react";
+import { ArrowLeft, Calendar, User, Bike, Wrench, CreditCard, PencilIcon, Check } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import EditInspectionForm from "./EditInspectionForm";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const InspectionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   useEffect(() => {
     const fetchInspectionData = async () => {
       setIsLoading(true);
@@ -87,6 +93,84 @@ const InspectionDetail = () => {
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-200"><ArrowLeft className="h-3 w-3 mr-1" /> Cancelada</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const handleUpdateInspection = async (data: Partial<Inspection>) => {
+    if (!inspection || !id) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("inspections")
+        .update({
+          status: data.status,
+          notes: data.notes,
+          inspection_value: data.inspectionValue
+        })
+        .eq("id", id);
+      
+      if (error) throw error;
+      
+      // Update local state with new data
+      setInspection({
+        ...inspection,
+        status: data.status || inspection.status,
+        notes: data.notes !== undefined ? data.notes : inspection.notes,
+        inspectionValue: data.inspectionValue
+      });
+      
+      toast({
+        title: "Inspeção atualizada",
+        description: "Os detalhes da inspeção foram atualizados com sucesso.",
+      });
+      
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating inspection:", error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar os detalhes da inspeção.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleMarkAsCompleted = async () => {
+    if (!inspection || !id) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("inspections")
+        .update({
+          status: "completed"
+        })
+        .eq("id", id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setInspection({
+        ...inspection,
+        status: "completed"
+      });
+      
+      toast({
+        title: "Inspeção concluída",
+        description: "A inspeção foi marcada como concluída."
+      });
+    } catch (error) {
+      console.error("Error marking inspection as completed:", error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível marcar a inspeção como concluída.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -178,8 +262,8 @@ const InspectionDetail = () => {
                 <div className="flex items-center mt-1">
                   <CreditCard className="h-4 w-4 mr-2 text-muted-foreground" />
                   <span className="font-medium">
-                    {inspection.inspectionValue 
-                      ? `R$ ${inspection.inspectionValue.toFixed(2)}` 
+                    {inspection.inspectionValue !== null && inspection.inspectionValue !== undefined
+                      ? `R$ ${Number(inspection.inspectionValue).toFixed(2)}`
                       : "Valor não registrado"}
                   </span>
                 </div>
@@ -199,12 +283,35 @@ const InspectionDetail = () => {
           )}
         </CardContent>
         <CardFooter className="flex justify-end space-x-2">
-          <Button variant="outline">Editar</Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setIsEditing(true)}
+          >
+            <PencilIcon className="h-4 w-4 mr-2" /> Editar
+          </Button>
           {inspection.status !== "completed" && (
-            <Button>Marcar como concluída</Button>
+            <Button onClick={handleMarkAsCompleted} disabled={isSubmitting}>
+              <Check className="h-4 w-4 mr-2" /> Marcar como concluída
+            </Button>
           )}
         </CardFooter>
       </Card>
+
+      <Sheet open={isEditing} onOpenChange={setIsEditing}>
+        <SheetContent className="sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Editar Inspeção</SheetTitle>
+          </SheetHeader>
+          <div className="py-4">
+            <EditInspectionForm 
+              inspection={inspection} 
+              onSubmit={handleUpdateInspection} 
+              isSubmitting={isSubmitting}
+              onCancel={() => setIsEditing(false)}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
