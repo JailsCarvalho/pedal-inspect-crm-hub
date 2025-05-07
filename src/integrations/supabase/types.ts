@@ -162,27 +162,47 @@ export type Database = {
       }
       sales: {
         Row: {
+          bike_model: string | null
+          bike_serial_number: string | null
           created_at: string
+          customer_id: string | null
+          date: string
           id: string
-          inspections: number
-          month: string
-          sales: number
+          notes: string | null
+          price: number
+          product_name: string
         }
         Insert: {
+          bike_model?: string | null
+          bike_serial_number?: string | null
           created_at?: string
+          customer_id?: string | null
+          date?: string
           id?: string
-          inspections?: number
-          month: string
-          sales?: number
+          notes?: string | null
+          price?: number
+          product_name: string
         }
         Update: {
+          bike_model?: string | null
+          bike_serial_number?: string | null
           created_at?: string
+          customer_id?: string | null
+          date?: string
           id?: string
-          inspections?: number
-          month?: string
-          sales?: number
+          notes?: string | null
+          price?: number
+          product_name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sales_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

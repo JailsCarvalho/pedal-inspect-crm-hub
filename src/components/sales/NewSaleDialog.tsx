@@ -9,14 +9,20 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Customer } from "@/types";
-import { addDays, format } from "date-fns";
 
 // Schema para validação do formulário
 const saleFormSchema = z.object({
-  customerId: z.string().min(1, "Cliente é obrigatório"),
+  customerId: z.string().optional(),
   productName: z.string().min(1, "Nome do produto é obrigatório"),
   bikeModel: z.string().optional(),
   bikeSerialNumber: z.string().optional(),
@@ -25,7 +31,21 @@ const saleFormSchema = z.object({
   notes: z.string().optional(),
 });
 
+// Schema para validação de novo cliente
+const newCustomerSchema = z.object({
+  name: z.string().min(3, "Nome é obrigatório e deve ter pelo menos 3 caracteres"),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  phone: z.string().optional(),
+  birthdate: z.date().optional().nullable(),
+  address: z.string().optional(),
+});
+
 type SaleFormValues = z.infer<typeof saleFormSchema>;
+type NewCustomerValues = z.infer<typeof newCustomerSchema>;
+
+type CombinedFormValues = SaleFormValues & {
+  newCustomer?: NewCustomerValues;
+};
 
 interface NewSaleDialogProps {
   open: boolean;
@@ -36,9 +56,10 @@ interface NewSaleDialogProps {
 const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"existing" | "new">("existing");
   const { toast } = useToast();
 
-  const form = useForm<SaleFormValues>({
+  const saleForm = useForm<SaleFormValues>({
     resolver: zodResolver(saleFormSchema),
     defaultValues: {
       customerId: "",
@@ -48,6 +69,17 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
       price: undefined,
       date: format(new Date(), "yyyy-MM-dd"),
       notes: "",
+    },
+  });
+
+  const newCustomerForm = useForm<NewCustomerValues>({
+    resolver: zodResolver(newCustomerSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      birthdate: null,
     },
   });
 
@@ -88,15 +120,40 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
     }
   }, [open, toast]);
 
-  const onSubmit = async (data: SaleFormValues) => {
+  const onSubmit = async (data: CombinedFormValues) => {
     try {
       setIsLoading(true);
 
-      // 1. Primeiro, registra a venda
+      let customerId = data.customerId;
+
+      // Se estiver criando um novo cliente
+      if (activeTab === "new" && data.newCustomer) {
+        // 1. Criar o novo cliente
+        const { data: customerData, error: customerError } = await supabase
+          .from("customers")
+          .insert({
+            name: data.newCustomer.name,
+            email: data.newCustomer.email || null,
+            phone: data.newCustomer.phone || null,
+            birthdate: data.newCustomer.birthdate ? format(data.newCustomer.birthdate, "yyyy-MM-dd") : null,
+            address: data.newCustomer.address || null,
+          })
+          .select()
+          .single();
+
+        if (customerError) throw customerError;
+        customerId = customerData.id;
+      }
+
+      if (!customerId) {
+        throw new Error("Cliente é obrigatório");
+      }
+
+      // 2. Registra a venda
       const { data: saleData, error: saleError } = await supabase
         .from("sales")
         .insert({
-          customer_id: data.customerId,
+          customer_id: customerId,
           product_name: data.productName,
           bike_model: data.bikeModel || null,
           bike_serial_number: data.bikeSerialNumber || null,
@@ -109,13 +166,13 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
 
       if (saleError) throw saleError;
 
-      // 2. Se tiver modelo de bike, cria ou atualiza o registro da bike
+      // 3. Se tiver modelo de bike, cria ou atualiza o registro da bike
       if (data.bikeModel) {
         // Verifica se já existe uma bike com esse número de série para esse cliente
         const { data: existingBike } = await supabase
           .from("bikes")
           .select("id")
-          .eq("customer_id", data.customerId)
+          .eq("customer_id", customerId)
           .eq("serial_number", data.bikeSerialNumber || "")
           .maybeSingle();
 
@@ -124,29 +181,13 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
           const { error: bikeError } = await supabase
             .from("bikes")
             .insert({
-              customer_id: data.customerId,
+              customer_id: customerId,
               model: data.bikeModel,
               serial_number: data.bikeSerialNumber || null,
             });
 
           if (bikeError) throw bikeError;
         }
-
-        // 3. Agenda uma inspeção para daqui a 360 dias
-        const nextInspectionDate = addDays(new Date(data.date), 360);
-        
-        const { error: inspectionError } = await supabase
-          .from("inspections")
-          .insert({
-            customer_id: data.customerId,
-            bike_id: existingBike?.id || null, // Se não existir uma bike, deixa como null
-            date: format(new Date(), "yyyy-MM-dd"),
-            next_inspection_date: format(nextInspectionDate, "yyyy-MM-dd"),
-            status: "scheduled",
-            notes: `Inspeção agendada automaticamente para ${format(nextInspectionDate, "dd/MM/yyyy")} após compra da bike.`,
-          });
-
-        if (inspectionError) throw inspectionError;
       }
 
       // 4. Cria uma notificação sobre a nova venda
@@ -156,11 +197,13 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
           title: "Nova venda registrada",
           message: `Uma nova venda foi registrada para o produto ${data.productName}.`,
           type: "system",
-          customer_id: data.customerId,
+          customer_id: customerId,
           read: false,
         });
 
-      form.reset();
+      saleForm.reset();
+      newCustomerForm.reset();
+      setActiveTab("existing");
       onOpenChange(false);
       onSaleCreated();
 
@@ -176,158 +219,308 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
     }
   };
 
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (activeTab === "existing") {
+      const isValid = await saleForm.trigger();
+      if (isValid) {
+        const saleData = saleForm.getValues();
+        onSubmit(saleData);
+      }
+    } else {
+      const isSaleValid = await saleForm.trigger(["productName", "bikeModel", "bikeSerialNumber", "price", "date", "notes"]);
+      const isCustomerValid = await newCustomerForm.trigger();
+      
+      if (isSaleValid && isCustomerValid) {
+        const saleData = saleForm.getValues();
+        const customerData = newCustomerForm.getValues();
+        onSubmit({ ...saleData, customerId: undefined, newCustomer: customerData });
+      }
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[650px]">
         <DialogHeader>
           <DialogTitle>Nova Venda</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="customerId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cliente</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={isLoading}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um cliente" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="productName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do Produto</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Ex: Bicicleta Specialized Rockhopper"
-                      {...field}
-                      disabled={isLoading}
+        
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "existing" | "new")} className="mt-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="existing">Cliente Existente</TabsTrigger>
+            <TabsTrigger value="new">Novo Cliente</TabsTrigger>
+          </TabsList>
+          
+          <form onSubmit={handleFormSubmit} className="space-y-6 mt-4">
+            <TabsContent value="existing">
+              <Form {...saleForm}>
+                <FormField
+                  control={saleForm.control}
+                  name="customerId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cliente</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        disabled={isLoading}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um cliente" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {customers.map((customer) => (
+                            <SelectItem key={customer.id} value={customer.id}>
+                              {customer.name} {customer.phone ? `(${customer.phone})` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </Form>
+            </TabsContent>
+            
+            <TabsContent value="new">
+              <Form {...newCustomerForm}>
+                <div className="space-y-4">
+                  <FormField
+                    control={newCustomerForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Cliente*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nome completo" {...field} disabled={isLoading} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={newCustomerForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="email@exemplo.com" {...field} disabled={isLoading} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="bikeModel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Modelo da Bike (opcional)</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ex: Rockhopper Expert"
-                        {...field}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="bikeSerialNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Número de Série (opcional)</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ex: SP12345678"
-                        {...field}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        {...field}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        {...field}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Observações (opcional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Observações sobre a venda"
-                      className="resize-none"
-                      {...field}
-                      disabled={isLoading}
+                    
+                    <FormField
+                      control={newCustomerForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Telefone</FormLabel>
+                          <FormControl>
+                            <Input placeholder="(00) 00000-0000" {...field} disabled={isLoading} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={newCustomerForm.control}
+                      name="birthdate"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Data de Nascimento</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "dd/MM/yyyy", { locale: ptBR })
+                                  ) : (
+                                    <span>Selecionar data</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value || undefined}
+                                onSelect={field.onChange}
+                                disabled={(date) =>
+                                  date > new Date() || date < new Date("1900-01-01")
+                                }
+                                initialFocus
+                                locale={ptBR}
+                                captionLayout="dropdown-buttons"
+                                fromYear={1920}
+                                toYear={new Date().getFullYear()}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <FormField
+                    control={newCustomerForm.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Endereço</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Endereço completo" {...field} disabled={isLoading} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </Form>
+            </TabsContent>
+            
+            {/* Campos comuns para ambas as abas */}
+            <div className="pt-4 border-t">
+              <Form {...saleForm}>
+                <div className="space-y-4">
+                  <FormField
+                    control={saleForm.control}
+                    name="productName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Produto*</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ex: Bicicleta Specialized Rockhopper"
+                            {...field}
+                            disabled={isLoading}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={saleForm.control}
+                      name="bikeModel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Modelo da Bike (opcional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Ex: Rockhopper Expert"
+                              {...field}
+                              disabled={isLoading}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={saleForm.control}
+                      name="bikeSerialNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Número de Série (opcional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Ex: SP12345678"
+                              {...field}
+                              disabled={isLoading}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={saleForm.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Valor*</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              {...field}
+                              disabled={isLoading}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={saleForm.control}
+                      name="date"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Data*</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              {...field}
+                              disabled={isLoading}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={saleForm.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Observações (opcional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Observações sobre a venda"
+                            className="resize-none"
+                            {...field}
+                            disabled={isLoading}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </Form>
+            </div>
+            
             <div className="flex justify-end space-x-2 pt-4">
               <Button
                 type="button"
@@ -342,7 +535,7 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
               </Button>
             </div>
           </form>
-        </Form>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
