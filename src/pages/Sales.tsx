@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import SalesList from "@/components/sales/SalesList";
 import { Button } from "@/components/ui/button";
-import { NewSaleDialog } from "@/components/sales/NewSaleDialog";
+import NewSaleDialog from "@/components/sales/NewSaleDialog";
 import { NewInspectionDialog } from "@/components/inspections/NewInspectionDialog";
 import { PlusCircle } from "lucide-react";
 
