@@ -100,7 +100,7 @@ const SalesList = () => {
                 <TableCell>{sale.customerName}</TableCell>
                 <TableCell>{sale.productName}</TableCell>
                 <TableCell>{sale.bikeModel || "-"}</TableCell>
-                <TableCell>R$ {sale.price.toFixed(2).replace(".", ",")}</TableCell>
+                <TableCell>EUR {sale.price.toFixed(2).replace(".", ",")}</TableCell>
               </TableRow>
             ))
           )}
