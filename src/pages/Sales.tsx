@@ -59,7 +59,7 @@ const Sales = () => {
   };
 
   // Fix the function signature to match what NewInspectionDialog expects
-  const handleInspectionCreated = (data: any) => {
+  const handleInspectionCreated = () => {
     toast({
       title: "Inspeção agendada",
       description: "Uma inspeção foi agendada para daqui a 360 dias."
