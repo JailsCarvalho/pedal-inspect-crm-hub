@@ -3,7 +3,7 @@ import React from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Bell, Calendar } from "lucide-react";
 import { Customer, Inspection } from "@/types";
-import { format, isToday, differenceInDays } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface AlertPanelProps {
@@ -12,6 +12,9 @@ interface AlertPanelProps {
 }
 
 const AlertPanel: React.FC<AlertPanelProps> = ({ customers, inspections }) => {
+  console.log("AlertPanel - Total customers:", customers.length);
+  console.log("AlertPanel - Total inspections:", inspections.length);
+  
   // Filtrar clientes que fazem aniversário hoje
   const birthdayCustomers = customers.filter((customer) => {
     if (!customer.birthdate) return false;
@@ -19,12 +22,16 @@ const AlertPanel: React.FC<AlertPanelProps> = ({ customers, inspections }) => {
     const birthdate = new Date(customer.birthdate);
     const today = new Date();
     
-    return (
+    // Compara apenas mês e dia, ignorando o ano
+    const isBirthday = 
       birthdate.getDate() === today.getDate() && 
-      birthdate.getMonth() === today.getMonth()
-    );
+      birthdate.getMonth() === today.getMonth();
+      
+    return isBirthday;
   });
-
+  
+  console.log("AlertPanel - Birthday customers found:", birthdayCustomers.length);
+  
   // Filtrar inspeções que estão próximas (nos próximos 5 dias)
   const upcomingInspections = inspections.filter((inspection) => {
     if (!inspection.date) return false;
@@ -33,13 +40,28 @@ const AlertPanel: React.FC<AlertPanelProps> = ({ customers, inspections }) => {
     const today = new Date();
     const daysDifference = differenceInDays(inspectionDate, today);
     
-    return daysDifference >= 0 && daysDifference <= 5;
+    // Mostra inspeções de hoje até 5 dias no futuro
+    const isUpcoming = daysDifference >= 0 && daysDifference <= 5;
+    return isUpcoming;
   });
+  
+  console.log("AlertPanel - Upcoming inspections found:", upcomingInspections.length);
 
-  const hasAlerts = birthdayCustomers.length > 0 || upcomingInspections.length > 0;
-
-  if (!hasAlerts) {
-    return null; // Não renderiza nada se não houver alertas
+  // Para testes, vamos sempre mostrar o painel mesmo sem alertas
+  // Remova este código quando estiver em produção
+  if (birthdayCustomers.length === 0 && upcomingInspections.length === 0) {
+    console.log("AlertPanel - No alerts to show, but showing test panel anyway");
+    return (
+      <div className="mb-6 space-y-4">
+        <Alert className="border-gray-200 bg-gray-50">
+          <AlertTitle className="text-gray-800">Painel de Alertas Ativo</AlertTitle>
+          <AlertDescription>
+            Não há aniversários ou inspeções próximas para mostrar no momento.
+            Este alerta aparecerá apenas quando houver aniversários no dia atual ou inspeções nos próximos 5 dias.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   return (
