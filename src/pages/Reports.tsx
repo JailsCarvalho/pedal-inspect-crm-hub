@@ -25,7 +25,8 @@ const Reports = () => {
           .select(`
             id,
             date,
-            price
+            price,
+            bike_model
           `);
         
         if (salesError) throw salesError;
@@ -37,7 +38,8 @@ const Reports = () => {
             id,
             date,
             status,
-            inspection_value
+            inspection_value,
+            next_inspection_date
           `);
         
         if (inspectionsError) throw inspectionsError;
@@ -59,6 +61,10 @@ const Reports = () => {
             
             if (month && monthlyData[month]) {
               monthlyData[month].sales += Number(sale.price || 0);
+              // Increment inspection count if the sale includes a bike model
+              if (sale.bike_model) {
+                monthlyData[month].inspections += 1;
+              }
             }
           }
         });
@@ -70,11 +76,21 @@ const Reports = () => {
             const month = monthNames[date.getMonth()];
             
             if (month && monthlyData[month]) {
-              monthlyData[month].inspections += 1;
               // Only add inspection value if it's completed
               if (inspection.status === "completed" && inspection.inspection_value) {
                 monthlyData[month].sales += Number(inspection.inspection_value);
               }
+            }
+          }
+          
+          // Also process next inspection date for future projections
+          if (inspection.next_inspection_date) {
+            const nextDate = new Date(inspection.next_inspection_date);
+            const nextMonth = monthNames[nextDate.getMonth()];
+            
+            if (nextMonth && monthlyData[nextMonth] && nextDate > new Date()) {
+              // This is a future inspection, count it separately
+              monthlyData[nextMonth].inspections += 1;
             }
           }
         });

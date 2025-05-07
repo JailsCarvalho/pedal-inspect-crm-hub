@@ -58,7 +58,7 @@ const Sales = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  // Fix the function signature to match what NewInspectionDialog expects
+  // Match the function signature that NewInspectionDialog expects (no parameters)
   const handleInspectionCreated = () => {
     toast({
       title: "Inspeção agendada",
