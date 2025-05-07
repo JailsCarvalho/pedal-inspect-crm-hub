@@ -78,6 +78,7 @@ export type Database = {
           customer_id: string
           date: string
           id: string
+          inspection_value: number | null
           next_inspection_date: string
           notes: string | null
           status: string
@@ -88,6 +89,7 @@ export type Database = {
           customer_id: string
           date?: string
           id?: string
+          inspection_value?: number | null
           next_inspection_date: string
           notes?: string | null
           status?: string
@@ -98,6 +100,7 @@ export type Database = {
           customer_id?: string
           date?: string
           id?: string
+          inspection_value?: number | null
           next_inspection_date?: string
           notes?: string | null
           status?: string

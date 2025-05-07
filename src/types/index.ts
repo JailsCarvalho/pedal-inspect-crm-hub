@@ -1,3 +1,4 @@
+
 export interface Customer {
   id: string;
   name: string;
@@ -36,4 +37,5 @@ export interface NotificationItem {
   type: NotificationType;
   read: boolean;
   date: string;
+  customer_id?: string; // Added customer_id field
 }

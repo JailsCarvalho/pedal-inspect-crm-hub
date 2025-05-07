@@ -297,7 +297,7 @@ export class NotificationService {
     const notification: Omit<NotificationItem, "id" | "date"> = {
       title: "Email de Teste",
       message: `Email de teste enviado para ${to} em ${currentDate}.`,
-      type: "email",
+      type: "system",
       read: false
     };
     

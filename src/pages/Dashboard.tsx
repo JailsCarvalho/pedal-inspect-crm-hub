@@ -41,7 +41,8 @@ const Dashboard = () => {
           message: notification.message,
           type: typedType,
           read: notification.read,
-          date: notification.date
+          date: notification.date,
+          customer_id: notification.customer_id
         };
       });
       
@@ -119,67 +120,75 @@ const Dashboard = () => {
             inspection_value
           `);
         
-        if (inspectionsError) throw inspectionsError;
-        
-        const transformedInspections: Inspection[] = (inspectionsData || []).map(item => {
-          // Ensure status is one of the allowed values
-          let typedStatus: "scheduled" | "completed" | "pending" | "cancelled" = "pending";
-          
-          if (item.status === "scheduled" || item.status === "completed" || 
-              item.status === "pending" || item.status === "cancelled") {
-            typedStatus = item.status as "scheduled" | "completed" | "pending" | "cancelled";
-          }
-          
-          return {
-            id: item.id,
-            customerId: item.customer_id,
-            customerName: item.customers?.name || "Unknown",
-            bikeModel: item.bikes?.model || "Unknown",
-            bikeSerialNumber: item.bikes?.serial_number || "",
-            date: item.date,
-            nextInspectionDate: item.next_inspection_date,
-            status: typedStatus,
-            notes: item.notes || "",
-            inspectionValue: item.inspection_value || 0
-          };
-        });
-        
-        setInspections(transformedInspections);
-        
-        // For sales data, we now use actual inspection values and don't use mock data
-        // Group inspections by month and calculate total value
-        const monthlyData: Record<string, { inspections: number, sales: number }> = {};
-        const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-        
-        // Initialize with empty data for all months
-        monthNames.forEach(month => {
-          monthlyData[month] = { inspections: 0, sales: 0 };
-        });
-        
-        // Fill with actual data
-        transformedInspections.forEach(inspection => {
-          if (inspection.date) {
-            const date = new Date(inspection.date);
-            const month = monthNames[date.getMonth()];
+        if (inspectionsError) {
+          console.error("Error loading inspections:", inspectionsError);
+          toast({
+            variant: "destructive",
+            title: "Erro",
+            description: "Não foi possível carregar as inspeções."
+          });
+          setInspections([]);
+        } else {
+          const transformedInspections: Inspection[] = (inspectionsData || []).map(item => {
+            // Ensure status is one of the allowed values
+            let typedStatus: "scheduled" | "completed" | "pending" | "cancelled" = "pending";
             
-            if (month && monthlyData[month]) {
-              monthlyData[month].inspections += 1;
-              // Only add inspection value if it's completed
-              if (inspection.status === "completed" && inspection.inspectionValue) {
-                monthlyData[month].sales += Number(inspection.inspectionValue);
+            if (item.status === "scheduled" || item.status === "completed" || 
+                item.status === "pending" || item.status === "cancelled") {
+              typedStatus = item.status as "scheduled" | "completed" | "pending" | "cancelled";
+            }
+            
+            return {
+              id: item.id,
+              customerId: item.customer_id,
+              customerName: item.customers?.name || "Unknown",
+              bikeModel: item.bikes?.model || "Unknown",
+              bikeSerialNumber: item.bikes?.serial_number || "",
+              date: item.date,
+              nextInspectionDate: item.next_inspection_date,
+              status: typedStatus,
+              notes: item.notes || "",
+              inspectionValue: item.inspection_value || 0
+            };
+          });
+          
+          setInspections(transformedInspections);
+          
+          // For sales data, we now use actual inspection values and don't use mock data
+          // Group inspections by month and calculate total value
+          const monthlyData: Record<string, { inspections: number, sales: number }> = {};
+          const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+          
+          // Initialize with empty data for all months
+          monthNames.forEach(month => {
+            monthlyData[month] = { inspections: 0, sales: 0 };
+          });
+          
+          // Fill with actual data
+          transformedInspections.forEach(inspection => {
+            if (inspection.date) {
+              const date = new Date(inspection.date);
+              const month = monthNames[date.getMonth()];
+              
+              if (month && monthlyData[month]) {
+                monthlyData[month].inspections += 1;
+                // Only add inspection value if it's completed
+                if (inspection.status === "completed" && inspection.inspectionValue) {
+                  monthlyData[month].sales += Number(inspection.inspectionValue);
+                }
               }
             }
-          }
-        });
-        
-        // Convert to array format for the chart
-        const chartData: SalesData[] = Object.entries(monthlyData).map(([month, data]) => ({
-          month,
-          inspections: data.inspections,
-          sales: data.sales
-        }));
-        
-        setSalesData(chartData);
+          });
+          
+          // Convert to array format for the chart
+          const chartData: SalesData[] = Object.entries(monthlyData).map(([month, data]) => ({
+            month,
+            inspections: data.inspections,
+            sales: data.sales
+          }));
+          
+          setSalesData(chartData);
+        }
         
         // Load notifications
         await loadNotifications();
