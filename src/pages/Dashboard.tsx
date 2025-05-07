@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import StatCard from "@/components/dashboard/StatCard";
 import SalesChart from "@/components/dashboard/SalesChart";
 import NotificationsCard from "@/components/dashboard/NotificationsCard";
+import AlertPanel from "@/components/dashboard/AlertPanel";
 import { Users, Bike, Calendar, ChevronRight, ChartBar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -234,6 +234,9 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
+          {/* Adiciona o painel de alertas */}
+          <AlertPanel customers={customers} inspections={inspections} />
+          
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Clientes Registrados"
