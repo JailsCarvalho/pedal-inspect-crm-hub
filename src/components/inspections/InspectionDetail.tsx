@@ -1,11 +1,10 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Inspection } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { ArrowLeft, Calendar, User, Bike, Wrench, CreditCard, PencilIcon, Check } from "lucide-react";
+import { ArrowLeft, Calendar, User, Bike, Wrench, CreditCard, PencilIcon, Check, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +20,7 @@ const InspectionDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customerPhone, setCustomerPhone] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchInspectionData = async () => {
@@ -36,7 +36,7 @@ const InspectionDetail = () => {
             notes,
             inspection_value,
             customer_id,
-            customers(name),
+            customers(name, phone),
             bike_id,
             bikes(model, serial_number)
           `)
@@ -60,6 +60,11 @@ const InspectionDetail = () => {
         };
         
         setInspection(transformedInspection);
+        
+        // Store customer phone for WhatsApp message
+        if (data.customers?.phone) {
+          setCustomerPhone(data.customers.phone);
+        }
       } catch (error) {
         console.error("Error fetching inspection details:", error);
       } finally {
@@ -174,6 +179,35 @@ const InspectionDetail = () => {
     }
   };
 
+  const handleSendWhatsAppMessage = () => {
+    if (!inspection || !customerPhone) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar a mensagem. Telefone do cliente não encontrado.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Format the phone number (remove any non-digit characters)
+    const formattedPhone = customerPhone.replace(/\D/g, "");
+    
+    // Create the WhatsApp message with customer name and next inspection date
+    const nextInspectionDateFormatted = formatDate(inspection.nextInspectionDate);
+    const message = `Olá ${inspection.customerName}, esperamos que esteja tudo bem! Gostaríamos de lembrá-lo(a) que a próxima inspeção da sua bicicleta ${inspection.bikeModel} está agendada para ${nextInspectionDateFormatted}. Aguardamos o seu contato para confirmar. Obrigado!`;
+    
+    // Create WhatsApp URL
+    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+    
+    // Open WhatsApp in a new window
+    window.open(whatsappUrl, "_blank");
+    
+    toast({
+      title: "WhatsApp aberto",
+      description: "Mensagem preparada para envio."
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -226,6 +260,11 @@ const InspectionDetail = () => {
                     {inspection.customerName}
                   </Button>
                 </div>
+                {customerPhone && (
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    Tel: {customerPhone}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -282,7 +321,15 @@ const InspectionDetail = () => {
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-end space-x-2">
+        <CardFooter className="flex flex-wrap justify-end gap-2">
+          {customerPhone && (
+            <Button 
+              onClick={handleSendWhatsAppMessage}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" /> Enviar WhatsApp
+            </Button>
+          )}
           <Button 
             variant="outline" 
             onClick={() => setIsEditing(true)}
