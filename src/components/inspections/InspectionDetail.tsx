@@ -263,7 +263,7 @@ const InspectionDetail = () => {
                   <CreditCard className="h-4 w-4 mr-2 text-muted-foreground" />
                   <span className="font-medium">
                     {inspection.inspectionValue !== null && inspection.inspectionValue !== undefined
-                      ? `R$ ${Number(inspection.inspectionValue).toFixed(2)}`
+                      ? `EUR ${Number(inspection.inspectionValue).toFixed(2)}`
                       : "Valor não registrado"}
                   </span>
                 </div>
