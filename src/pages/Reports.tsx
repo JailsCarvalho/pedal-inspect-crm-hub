@@ -19,7 +19,18 @@ const Reports = () => {
       try {
         setIsLoading(true);
         
-        // Load inspections to calculate sales data
+        // Load sales data
+        const { data: salesRecords, error: salesError } = await supabase
+          .from("sales")
+          .select(`
+            id,
+            date,
+            price
+          `);
+        
+        if (salesError) throw salesError;
+        
+        // Load inspections to calculate additional revenue
         const { data: inspectionsData, error: inspectionsError } = await supabase
           .from("inspections")
           .select(`
@@ -31,7 +42,7 @@ const Reports = () => {
         
         if (inspectionsError) throw inspectionsError;
         
-        // Group inspections by month and calculate total value
+        // Group data by month and calculate total values
         const monthlyData: Record<string, { inspections: number, sales: number }> = {};
         const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
         
@@ -40,7 +51,19 @@ const Reports = () => {
           monthlyData[month] = { inspections: 0, sales: 0 };
         });
         
-        // Fill with actual data
+        // Process sales data
+        (salesRecords || []).forEach((sale: any) => {
+          if (sale.date) {
+            const date = new Date(sale.date);
+            const month = monthNames[date.getMonth()];
+            
+            if (month && monthlyData[month]) {
+              monthlyData[month].sales += Number(sale.price || 0);
+            }
+          }
+        });
+        
+        // Process inspections data
         (inspectionsData || []).forEach((inspection: any) => {
           if (inspection.date) {
             const date = new Date(inspection.date);

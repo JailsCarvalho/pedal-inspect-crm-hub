@@ -58,7 +58,7 @@ const Sales = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  // Update the function signature to accept a parameter that matches what NewInspectionDialog expects
+  // Fix the function signature to match what NewInspectionDialog expects
   const handleInspectionCreated = (data?: any) => {
     toast({
       title: "Inspeção agendada",
@@ -107,4 +107,3 @@ const Sales = () => {
 };
 
 export default Sales;
-
