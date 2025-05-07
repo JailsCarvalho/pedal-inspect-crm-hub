@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,6 +44,11 @@ interface NewInspectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onInspectionCreated?: () => void;
+  initialCustomerId?: string;
+  initialBikeModel?: string;
+  initialBikeSerialNumber?: string;
+  initialDate?: Date;
+  initialNextInspectionDate?: Date;
 }
 
 interface Customer {
@@ -57,25 +61,43 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
   open,
   onOpenChange,
   onInspectionCreated,
+  initialCustomerId,
+  initialBikeModel,
+  initialBikeSerialNumber,
+  initialDate,
+  initialNextInspectionDate,
 }) => {
   const { toast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [existingBikes, setExistingBikes] = useState<any[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(initialCustomerId || null);
   const [useExistingBike, setUseExistingBike] = useState(false);
   const [selectedBike, setSelectedBike] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      bikeModel: "",
-      bikeSerialNumber: "",
-      date: new Date(),
-      nextInspectionDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      customerId: initialCustomerId || "",
+      bikeModel: initialBikeModel || "",
+      bikeSerialNumber: initialBikeSerialNumber || "",
+      date: initialDate || new Date(),
+      nextInspectionDate: initialNextInspectionDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       status: "scheduled" as const,
       notes: "",
     },
   });
+
+  // Atualizar form values quando valores iniciais mudarem
+  useEffect(() => {
+    if (initialCustomerId) {
+      form.setValue("customerId", initialCustomerId);
+      setSelectedCustomer(initialCustomerId);
+    }
+    if (initialBikeModel) form.setValue("bikeModel", initialBikeModel);
+    if (initialBikeSerialNumber) form.setValue("bikeSerialNumber", initialBikeSerialNumber);
+    if (initialDate) form.setValue("date", initialDate);
+    if (initialNextInspectionDate) form.setValue("nextInspectionDate", initialNextInspectionDate);
+  }, [initialCustomerId, initialBikeModel, initialBikeSerialNumber, initialDate, initialNextInspectionDate, form]);
 
   const isSubmitting = form.formState.isSubmitting;
 
