@@ -1,35 +1,45 @@
 
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Customer, Inspection } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Calendar, Mail, PhoneCall, Bike, Gift, MessageSquare } from "lucide-react";
-import { format, parse, differenceInDays, isValid, addYears } from "date-fns";
+import { ArrowLeft, Calendar, Mail, PhoneCall, Bike, Gift, MessageSquare, Pencil } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { EditClientDrawer } from "./EditClientDrawer";
 
-const ClientDetail = () => {
-  const { id } = useParams<{ id: string }>();
+interface ClientDetailProps {
+  clientId?: string;
+}
+
+const ClientDetail: React.FC<ClientDetailProps> = ({ clientId }) => {
   const navigate = useNavigate();
   const [client, setClient] = useState<Customer | null>(null);
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isBirthday, setIsBirthday] = useState(false);
   const [nextBirthdayDate, setNextBirthdayDate] = useState<string | null>(null);
+  const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchClientData = async () => {
+      if (!clientId) {
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       try {
         // Fetch client details
         const { data: clientData, error: clientError } = await supabase
           .from("customers")
           .select("*")
-          .eq("id", id)
+          .eq("id", clientId)
           .single();
 
         if (clientError) throw clientError;
@@ -52,34 +62,34 @@ const ClientDetail = () => {
           const today = new Date();
           
           try {
-            // Extract month and day from birthdate (format: YYYY-MM-DD)
-            const birthdateParts = customer.birthdate.split('T')[0].split('-');
-            if (birthdateParts.length === 3) {
-              const birthdayMonth = parseInt(birthdateParts[1], 10);
-              const birthdayDay = parseInt(birthdateParts[2], 10);
+            // Create Date object from the birthdate string
+            const birthdate = new Date(customer.birthdate);
+            
+            if (!isNaN(birthdate.getTime())) {
+              // Get current year's birthday
+              const currentYearBirthday = new Date(today.getFullYear(), birthdate.getMonth(), birthdate.getDate());
               
-              // Create dates for this year's birthday and next year's birthday
-              const thisYearBirthday = new Date(today.getFullYear(), birthdayMonth - 1, birthdayDay);
-              const nextYearBirthday = new Date(today.getFullYear() + 1, birthdayMonth - 1, birthdayDay);
+              // Get next year's birthday (for when this year's birthday has already passed)
+              const nextYearBirthday = new Date(today.getFullYear() + 1, birthdate.getMonth(), birthdate.getDate());
               
-              // Check if birthday is today
+              // Determine if today is the birthday
               if (
-                today.getDate() === thisYearBirthday.getDate() && 
-                today.getMonth() === thisYearBirthday.getMonth()
+                today.getDate() === currentYearBirthday.getDate() && 
+                today.getMonth() === currentYearBirthday.getMonth()
               ) {
                 setIsBirthday(true);
                 setNextBirthdayDate("hoje");
-              } else {
-                // Determine if we should use this year's or next year's birthday
-                const targetDate = today > thisYearBirthday ? nextYearBirthday : thisYearBirthday;
-                const daysDiff = differenceInDays(targetDate, today);
+              } 
+              // Calculate days until next birthday
+              else {
+                // Use the appropriate reference date (this year or next year)
+                const referenceDate = today > currentYearBirthday ? nextYearBirthday : currentYearBirthday;
+                const daysUntilBirthday = differenceInDays(referenceDate, today);
                 
-                if (daysDiff <= 7) {
-                  // Birthday is within next week
-                  setNextBirthdayDate(`em ${daysDiff} ${daysDiff === 1 ? 'dia' : 'dias'}`);
-                } else if (daysDiff <= 30) {
-                  // Birthday is within next month
-                  setNextBirthdayDate(`em ${daysDiff} dias`);
+                if (daysUntilBirthday <= 7) {
+                  setNextBirthdayDate(`em ${daysUntilBirthday} ${daysUntilBirthday === 1 ? 'dia' : 'dias'}`);
+                } else if (daysUntilBirthday <= 30) {
+                  setNextBirthdayDate(`em ${daysUntilBirthday} dias`);
                 }
               }
             }
@@ -102,7 +112,7 @@ const ClientDetail = () => {
             bike_id,
             bikes(model, serial_number)
           `)
-          .eq("customer_id", id);
+          .eq("customer_id", clientId);
         
         if (inspectionsError) throw inspectionsError;
         
@@ -128,10 +138,83 @@ const ClientDetail = () => {
       }
     };
 
-    if (id) {
-      fetchClientData();
+    fetchClientData();
+  }, [clientId]);
+
+  const handleClientUpdated = () => {
+    // Refetch client data after update
+    if (clientId) {
+      setIsLoading(true);
+      supabase
+        .from("customers")
+        .select("*")
+        .eq("id", clientId)
+        .single()
+        .then(({ data, error }) => {
+          if (error) throw error;
+          
+          const updatedCustomer: Customer = {
+            id: data.id,
+            name: data.name,
+            email: data.email || "",
+            phone: data.phone || "",
+            birthdate: data.birthdate || "",
+            address: data.address || "",
+            createdAt: data.created_at
+          };
+          
+          setClient(updatedCustomer);
+          
+          // Recalculate birthday info
+          if (updatedCustomer.birthdate) {
+            const today = new Date();
+            try {
+              const birthdate = new Date(updatedCustomer.birthdate);
+              
+              if (!isNaN(birthdate.getTime())) {
+                const currentYearBirthday = new Date(today.getFullYear(), birthdate.getMonth(), birthdate.getDate());
+                const nextYearBirthday = new Date(today.getFullYear() + 1, birthdate.getMonth(), birthdate.getDate());
+                
+                if (
+                  today.getDate() === currentYearBirthday.getDate() && 
+                  today.getMonth() === currentYearBirthday.getMonth()
+                ) {
+                  setIsBirthday(true);
+                  setNextBirthdayDate("hoje");
+                } else {
+                  const referenceDate = today > currentYearBirthday ? nextYearBirthday : currentYearBirthday;
+                  const daysUntilBirthday = differenceInDays(referenceDate, today);
+                  
+                  if (daysUntilBirthday <= 7) {
+                    setNextBirthdayDate(`em ${daysUntilBirthday} ${daysUntilBirthday === 1 ? 'dia' : 'dias'}`);
+                  } else if (daysUntilBirthday <= 30) {
+                    setNextBirthdayDate(`em ${daysUntilBirthday} dias`);
+                  } else {
+                    setNextBirthdayDate(null);
+                  }
+                }
+              } else {
+                setIsBirthday(false);
+                setNextBirthdayDate(null);
+              }
+            } catch (error) {
+              console.error("Error recalculating birthday:", error);
+              setIsBirthday(false);
+              setNextBirthdayDate(null);
+            }
+          } else {
+            setIsBirthday(false);
+            setNextBirthdayDate(null);
+          }
+        })
+        .catch((error) => {
+          console.error("Error updating client data:", error);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
-  }, [id]);
+  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -233,15 +316,25 @@ const ClientDetail = () => {
                 </Badge>
               )}
             </CardTitle>
-            {client.phone && (
-              <Button 
-                onClick={handleSendBirthdayMessage}
-                className="bg-green-600 hover:bg-green-700 flex items-center"
+            <div className="space-x-2">
+              {client.phone && (
+                <Button 
+                  onClick={handleSendBirthdayMessage}
+                  className="bg-green-600 hover:bg-green-700 flex items-center"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" /> 
+                  Enviar Mensagem de Aniversário
+                </Button>
+              )}
+              <Button
+                onClick={() => setIsEditDrawerOpen(true)}
+                variant="outline"
+                className="flex items-center"
               >
-                <MessageSquare className="h-4 w-4 mr-2" /> 
-                Enviar Mensagem de Aniversário
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
               </Button>
-            )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -345,6 +438,13 @@ const ClientDetail = () => {
           </CardContent>
         </Card>
       )}
+      
+      <EditClientDrawer
+        client={client}
+        open={isEditDrawerOpen}
+        onOpenChange={setIsEditDrawerOpen}
+        onClientUpdated={handleClientUpdated}
+      />
     </div>
   );
 };

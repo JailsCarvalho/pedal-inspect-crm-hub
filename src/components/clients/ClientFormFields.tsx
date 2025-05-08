@@ -110,6 +110,9 @@ export const ClientFormFields: React.FC<ClientFormFieldsProps> = ({ form }) => {
                     captionLayout="dropdown-buttons"
                     fromYear={1920}
                     toYear={new Date().getFullYear()}
+                    classNames={{
+                      caption_dropdowns: "flex justify-center gap-1 z-50"
+                    }}
                   />
                 </PopoverContent>
               </Popover>
