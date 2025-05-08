@@ -68,7 +68,17 @@ const ClientDetail = () => {
         )}
       </div>
       
-      <ClientDetailComponent />
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <p>Carregando detalhes do cliente...</p>
+        </div>
+      ) : client ? (
+        <ClientDetailComponent client={client} />
+      ) : (
+        <div className="p-6 text-center border rounded-md">
+          <p>Cliente não encontrado</p>
+        </div>
+      )}
       
       {client && (
         <EditClientDrawer
