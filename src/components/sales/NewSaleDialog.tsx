@@ -149,7 +149,32 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
         throw new Error("Cliente é obrigatório");
       }
 
-      // 2. Registra a venda
+      // Important: First create or ensure the bike record exists BEFORE creating the sale
+      if (data.bikeModel) {
+        // Check if bike exists first
+        const { data: existingBike } = await supabase
+          .from("bikes")
+          .select("id")
+          .eq("customer_id", customerId)
+          .eq("model", data.bikeModel)
+          .eq("serial_number", data.bikeSerialNumber || null)
+          .maybeSingle();
+
+        // If bike doesn't exist, create it
+        if (!existingBike) {
+          const { error: bikeError } = await supabase
+            .from("bikes")
+            .insert({
+              customer_id: customerId,
+              model: data.bikeModel,
+              serial_number: data.bikeSerialNumber || null,
+            });
+
+          if (bikeError) throw bikeError;
+        }
+      }
+
+      // 2. Now register the sale after ensuring bike exists
       const { data: saleData, error: saleError } = await supabase
         .from("sales")
         .insert({
@@ -166,31 +191,7 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
 
       if (saleError) throw saleError;
 
-      // 3. Se tiver modelo de bike, cria ou atualiza o registro da bike
-      if (data.bikeModel) {
-        // Verifica se já existe uma bike com esse número de série para esse cliente
-        const { data: existingBike } = await supabase
-          .from("bikes")
-          .select("id")
-          .eq("customer_id", customerId)
-          .eq("serial_number", data.bikeSerialNumber || "")
-          .maybeSingle();
-
-        if (!existingBike) {
-          // Se não existir, cria uma nova bike
-          const { error: bikeError } = await supabase
-            .from("bikes")
-            .insert({
-              customer_id: customerId,
-              model: data.bikeModel,
-              serial_number: data.bikeSerialNumber || null,
-            });
-
-          if (bikeError) throw bikeError;
-        }
-      }
-
-      // 4. Cria uma notificação sobre a nova venda
+      // 3. Create a notification about the new sale
       await supabase
         .from("notifications")
         .insert({
@@ -206,6 +207,9 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
       setActiveTab("existing");
       onOpenChange(false);
       onSaleCreated();
+
+      // Log success for debugging
+      console.log("Sale registered successfully with bike information");
 
     } catch (error) {
       console.error("Erro ao registrar venda:", error);
