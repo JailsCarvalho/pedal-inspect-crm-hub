@@ -70,10 +70,10 @@ function Calendar({
             })
             .filter((option) => option.value !== "");
 
-          // Important: Ensure we respect the onChange function from props
+          // Create a proper synthetic event or handle the string correctly
           const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
             if (onChange) {
-              // Call the onChange function provided by DayPicker
+              // Call the onChange function with the value directly
               onChange(e.target.value);
             }
           };
