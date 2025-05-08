@@ -56,7 +56,7 @@ function Calendar({
       components={{
         IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
         IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
-        Dropdown: ({ value, onChange, children }) => {
+        Dropdown: ({ value, onChange, children, ...props }) => {
           // Fix the type issues by properly handling the children
           const options = React.Children.toArray(children)
             .filter((child): child is React.ReactElement => React.isValidElement(child))
@@ -70,16 +70,25 @@ function Calendar({
             })
             .filter((option) => option.value !== "");
 
+          // Important: Ensure we respect the onChange function from props
+          const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+            if (onChange) {
+              // Call the onChange function provided by DayPicker
+              onChange(e.target.value);
+            }
+          };
+
           return (
             <select
               value={value as string}
-              onChange={(e) => {
-                if (onChange) {
-                  onChange(e.target.value as any);
-                }
+              onChange={handleChange}
+              className="px-2 py-1 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              style={{ 
+                position: 'relative', 
+                zIndex: 50,
+                fontWeight: 500
               }}
-              className="px-2 py-1 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring z-50"
-              style={{ position: 'relative', zIndex: 50 }}
+              {...props}
             >
               {options.map((option) => (
                 <option key={option.value} value={option.value}>

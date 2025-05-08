@@ -110,6 +110,7 @@ export const ClientFormFields: React.FC<ClientFormFieldsProps> = ({ form }) => {
                     captionLayout="dropdown-buttons"
                     fromYear={1920}
                     toYear={new Date().getFullYear()}
+                    defaultMonth={field.value || undefined}
                     classNames={{
                       caption_dropdowns: "flex justify-center gap-1",
                       dropdown: "z-50 bg-background border border-input rounded-md text-sm p-1",
