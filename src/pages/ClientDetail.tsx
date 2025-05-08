@@ -6,7 +6,7 @@ import ClientDetail from "@/components/clients/ClientDetail";
 const ClientDetailPage = () => {
   const { id } = useParams<{ id: string }>();
 
-  return <ClientDetail clientId={id} />;
+  return <ClientDetail clientId={id || ""} />;
 };
 
 export default ClientDetailPage;

@@ -111,7 +111,11 @@ export const ClientFormFields: React.FC<ClientFormFieldsProps> = ({ form }) => {
                     fromYear={1920}
                     toYear={new Date().getFullYear()}
                     classNames={{
-                      caption_dropdowns: "flex justify-center gap-1 z-50"
+                      caption_dropdowns: "flex justify-center gap-1",
+                      dropdown: "z-50 bg-background border border-input rounded-md text-sm p-1",
+                      dropdown_month: "z-50",
+                      dropdown_year: "z-50",
+                      vhidden: "hidden"
                     }}
                   />
                 </PopoverContent>

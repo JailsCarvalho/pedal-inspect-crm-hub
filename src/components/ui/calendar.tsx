@@ -79,6 +79,7 @@ function Calendar({
                 }
               }}
               className="px-2 py-1 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring z-50"
+              style={{ position: 'relative', zIndex: 50 }}
             >
               {options.map((option) => (
                 <option key={option.value} value={option.value}>
