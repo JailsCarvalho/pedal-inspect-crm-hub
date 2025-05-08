@@ -70,11 +70,15 @@ function Calendar({
             })
             .filter((option) => option.value !== "");
 
-          // Create a proper synthetic event or handle the string correctly
+          // Fix: Handle the onChange function properly
           const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
             if (onChange) {
-              // Call the onChange function with the value directly
-              onChange(e.target.value);
+              // Convert string value to match what DayPicker expects
+              const stringValue = e.target.value;
+              // Call the onChange with the value as expected by DayPicker
+              if (typeof onChange === 'function') {
+                onChange(stringValue);
+              }
             }
           };
 

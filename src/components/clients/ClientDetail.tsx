@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Customer, Inspection } from "@/types";
@@ -107,13 +108,15 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ clientId }) => {
     // Refetch client data after update
     if (clientId) {
       setIsLoading(true);
-      // Fix: Convert the Promise chain to async/await to handle errors properly
-      supabase
-        .from("customers")
-        .select("*")
-        .eq("id", clientId)
-        .single()
-        .then(({ data, error }) => {
+      // Fix: Remove the Promise chain and handle everything properly without catch
+      const fetchUpdatedClient = async () => {
+        try {
+          const { data, error } = await supabase
+            .from("customers")
+            .select("*")
+            .eq("id", clientId)
+            .single();
+          
           if (error) {
             console.error("Error updating client data:", error);
             setIsLoading(false);
@@ -132,12 +135,14 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ clientId }) => {
           
           setClient(updatedCustomer);
           recalculateBirthdayInfo(updatedCustomer);
-          setIsLoading(false);
-        })
-        .catch((error: Error) => {
+        } catch (error) {
           console.error("Error updating client data:", error);
+        } finally {
           setIsLoading(false);
-        });
+        }
+      };
+      
+      fetchUpdatedClient();
     }
   };
 
