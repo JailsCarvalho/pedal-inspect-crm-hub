@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -5,7 +6,7 @@ import * as z from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar, Bike } from "lucide-react";
-import { format } from "date-fns";
+import { format, addYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,13 +82,13 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
       bikeModel: initialBikeModel || "",
       bikeSerialNumber: initialBikeSerialNumber || "",
       date: initialDate || new Date(),
-      nextInspectionDate: initialNextInspectionDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      nextInspectionDate: initialNextInspectionDate || addYears(new Date(), 1),
       status: "scheduled" as const,
       notes: "",
     },
   });
 
-  // Atualizar form values quando valores iniciais mudarem
+  // Update form values when initial values change
   useEffect(() => {
     if (initialCustomerId) {
       form.setValue("customerId", initialCustomerId);
@@ -98,6 +99,17 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
     if (initialDate) form.setValue("date", initialDate);
     if (initialNextInspectionDate) form.setValue("nextInspectionDate", initialNextInspectionDate);
   }, [initialCustomerId, initialBikeModel, initialBikeSerialNumber, initialDate, initialNextInspectionDate, form]);
+
+  // Update next inspection date whenever inspection date changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'date' && value.date) {
+        form.setValue('nextInspectionDate', addYears(value.date as Date, 1));
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const isSubmitting = form.formState.isSubmitting;
 
@@ -194,6 +206,9 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
         bikeId = bikeData.id;
       }
 
+      // Set next inspection date to exactly one year after the inspection date
+      const nextInspectionDate = addYears(values.date, 1);
+
       // Now create the inspection
       const { error: inspectionError } = await supabase
         .from("inspections")
@@ -201,7 +216,7 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
           bike_id: bikeId,
           customer_id: values.customerId,
           date: format(values.date, "yyyy-MM-dd'T'HH:mm:ss"),
-          next_inspection_date: format(values.nextInspectionDate, "yyyy-MM-dd'T'HH:mm:ss"),
+          next_inspection_date: format(nextInspectionDate, "yyyy-MM-dd'T'HH:mm:ss"),
           status: values.status,
           notes: values.notes || null,
         });

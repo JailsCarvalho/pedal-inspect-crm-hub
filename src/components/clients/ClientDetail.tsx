@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Customer, Inspection } from "@/types";
@@ -5,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Calendar, Mail, PhoneCall, Bike, Gift, MessageSquare } from "lucide-react";
-import { format, parse, differenceInDays, isValid } from "date-fns";
+import { format, parse, differenceInDays, isValid, addYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -50,33 +51,40 @@ const ClientDetail = () => {
         if (customer.birthdate) {
           const today = new Date();
           
-          // Parse the birthdate string to a date object
-          const birthdateThisYear = parse(
-            `${today.getFullYear()}-${customer.birthdate.split('T')[0].substring(5)}`,
-            'yyyy-MM-dd',
-            new Date()
-          );
-
-          if (isValid(birthdateThisYear)) {
-            // Check if the birthday is today
-            const daysDiff = differenceInDays(birthdateThisYear, today);
-
-            if (daysDiff === 0) {
-              setIsBirthday(true);
-              setNextBirthdayDate("hoje");
-            } else if (daysDiff > 0 && daysDiff <= 7) {
-              // Birthday is within the next week
-              setNextBirthdayDate(`em ${daysDiff} ${daysDiff === 1 ? 'dia' : 'dias'}`);
-            } else if (daysDiff < 0) {
-              // Birthday already passed this year, show for next year
-              const birthdateNextYear = parse(
-                `${today.getFullYear() + 1}-${customer.birthdate.split('T')[0].substring(5)}`,
-                'yyyy-MM-dd',
-                new Date()
-              );
-              const daysUntilNextBirthday = differenceInDays(birthdateNextYear, today);
-              setNextBirthdayDate(`em ${daysUntilNextBirthday} dias`);
+          try {
+            // Extract month and day from birthdate (format: YYYY-MM-DD)
+            const birthdateParts = customer.birthdate.split('T')[0].split('-');
+            if (birthdateParts.length === 3) {
+              const birthdayMonth = parseInt(birthdateParts[1], 10);
+              const birthdayDay = parseInt(birthdateParts[2], 10);
+              
+              // Create dates for this year's birthday and next year's birthday
+              const thisYearBirthday = new Date(today.getFullYear(), birthdayMonth - 1, birthdayDay);
+              const nextYearBirthday = new Date(today.getFullYear() + 1, birthdayMonth - 1, birthdayDay);
+              
+              // Check if birthday is today
+              if (
+                today.getDate() === thisYearBirthday.getDate() && 
+                today.getMonth() === thisYearBirthday.getMonth()
+              ) {
+                setIsBirthday(true);
+                setNextBirthdayDate("hoje");
+              } else {
+                // Determine if we should use this year's or next year's birthday
+                const targetDate = today > thisYearBirthday ? nextYearBirthday : thisYearBirthday;
+                const daysDiff = differenceInDays(targetDate, today);
+                
+                if (daysDiff <= 7) {
+                  // Birthday is within next week
+                  setNextBirthdayDate(`em ${daysDiff} ${daysDiff === 1 ? 'dia' : 'dias'}`);
+                } else if (daysDiff <= 30) {
+                  // Birthday is within next month
+                  setNextBirthdayDate(`em ${daysDiff} dias`);
+                }
+              }
             }
+          } catch (error) {
+            console.error("Error calculating birthday:", error);
           }
         }
         
