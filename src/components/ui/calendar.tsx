@@ -75,7 +75,6 @@ function Calendar({
               value={value as string}
               onChange={(e) => {
                 if (onChange) {
-                  // Convertemos diretamente o valor da string, em vez de passar o evento
                   onChange(e.target.value as any);
                 }
               }}
