@@ -14,6 +14,8 @@ import TestEmail from "./pages/TestEmail";
 import ClientDetail from "./pages/ClientDetail";
 import InspectionDetail from "./pages/InspectionDetail";
 import Sales from "./pages/Sales";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
@@ -29,6 +31,8 @@ function App() {
             <Route path="sales" element={<Sales />} />
             <Route path="reports" element={<Reports />} />
             <Route path="test-email" element={<TestEmail />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="/login" element={<Login />} />
           <Route path="*" element={<NotFound />} />

@@ -1,5 +1,6 @@
 
 import React from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -16,6 +17,7 @@ import { useAuth } from "../../contexts/AuthContext";
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <header className="border-b bg-card">
@@ -40,8 +42,8 @@ const Navbar: React.FC = () => {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Perfil</DropdownMenuItem>
-            <DropdownMenuItem>Configurações</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/profile')}>Perfil</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/settings')}>Configurações</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout}>Sair</DropdownMenuItem>
           </DropdownMenuContent>
