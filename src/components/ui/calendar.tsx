@@ -70,13 +70,12 @@ function Calendar({
             })
             .filter((option) => option.value !== "");
 
-          // Create a proper handler that correctly handles the type conversion
+          // Fixed handler that properly converts the event to a string value
           const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-            // The DayPicker expects onChange to be called with just the string value
-            // So we need to extract the value from the event and cast the onChange function
             if (onChange) {
               const stringValue = e.target.value;
-              (onChange as (value: string) => void)(stringValue);
+              // Use "as unknown as" to properly handle the type conversion
+              (onChange as unknown as (value: string) => void)(stringValue);
             }
           };
 

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,23 @@ import { toast } from "@/hooks/use-toast";
 
 const Profile = () => {
   const { user } = useAuth();
+  const [formData, setFormData] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: "",
+  });
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
   
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
+    // Here you would typically save the user profile data
     toast({
       title: "Perfil atualizado",
       description: "Suas informações foram atualizadas com sucesso.",
@@ -41,17 +55,30 @@ const Profile = () => {
             <form onSubmit={handleSaveProfile} className="w-full space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome</Label>
-                <Input id="name" defaultValue={user?.name || ""} />
+                <Input 
+                  id="name" 
+                  value={formData.name} 
+                  onChange={handleChange}
+                />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue={user?.email || ""} readOnly />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  value={formData.email} 
+                  readOnly 
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="phone">Telefone</Label>
-                <Input id="phone" />
+                <Input 
+                  id="phone" 
+                  value={formData.phone} 
+                  onChange={handleChange}
+                />
               </div>
               
               <Button type="submit" className="w-full">Salvar alterações</Button>
