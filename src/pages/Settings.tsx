@@ -1,10 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
+
+const SETTINGS_KEY = "app_settings";
 
 const Settings = () => {
   const [notificationSettings, setNotificationSettings] = useState({
@@ -17,6 +19,24 @@ const Settings = () => {
     darkMode: false,
     compactView: false,
   });
+
+  // Load saved settings from localStorage on component mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem(SETTINGS_KEY);
+    if (savedSettings) {
+      try {
+        const parsedSettings = JSON.parse(savedSettings);
+        if (parsedSettings.notifications) {
+          setNotificationSettings(parsedSettings.notifications);
+        }
+        if (parsedSettings.appearance) {
+          setAppearanceSettings(parsedSettings.appearance);
+        }
+      } catch (error) {
+        console.error("Error loading saved settings:", error);
+      }
+    }
+  }, []);
 
   const handleNotificationChange = (id: string, checked: boolean) => {
     setNotificationSettings(prev => ({
@@ -34,7 +54,20 @@ const Settings = () => {
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically save the settings
+    // Save settings to localStorage
+    const settings = {
+      notifications: notificationSettings,
+      appearance: appearanceSettings
+    };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    
+    // Apply appearance settings if needed
+    if (appearanceSettings.darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    
     toast({
       title: "Configurações salvas",
       description: "Suas preferências foram atualizadas com sucesso.",
