@@ -33,7 +33,7 @@ const Profile = () => {
           ...prev,
           ...parsedProfile,
           // Always prioritize authenticated user data
-          name: user?.name || parsedProfile.name || "",
+          name: parsedProfile.name || user?.name || "",
           email: user?.email || parsedProfile.email || "",
         }));
         
