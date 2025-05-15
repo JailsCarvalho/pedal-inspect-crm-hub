@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Camera, User } from "lucide-react";
 
 const PROFILE_KEY = "user_profile";
 
@@ -17,6 +19,9 @@ const Profile = () => {
     email: user?.email || "",
     phone: "",
   });
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Load saved profile from localStorage on component mount
   useEffect(() => {
@@ -31,6 +36,11 @@ const Profile = () => {
           name: user?.name || parsedProfile.name || "",
           email: user?.email || parsedProfile.email || "",
         }));
+        
+        // Load saved avatar URL
+        if (parsedProfile.avatarUrl) {
+          setAvatarUrl(parsedProfile.avatarUrl);
+        }
       } catch (error) {
         console.error("Error loading saved profile:", error);
       }
@@ -47,13 +57,59 @@ const Profile = () => {
   
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    // Save profile data to localStorage
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(formData));
+    // Save profile data to localStorage with avatar URL
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({
+      ...formData,
+      avatarUrl
+    }));
     
     toast({
       title: "Perfil atualizado",
       description: "Suas informações foram atualizadas com sucesso.",
     });
+  };
+
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) {
+      return;
+    }
+
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+
+    setUploading(true);
+
+    try {
+      // Use FileReader to convert the file to a data URL
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          // Save the data URL to state
+          setAvatarUrl(event.target.result as string);
+          toast({
+            title: "Foto atualizada",
+            description: "Sua foto de perfil foi atualizada com sucesso.",
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      toast({
+        title: "Erro",
+        description: "Houve um erro ao atualizar sua foto de perfil.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const activities = [
@@ -82,13 +138,30 @@ const Profile = () => {
             <CardDescription>Atualize suas informações pessoais</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center">
-            <Avatar className="h-24 w-24 mb-4">
-              <AvatarImage src="" alt={formData.name || "Usuário"} />
-              <AvatarFallback className="text-xl bg-ambikes-orange text-white">
-                {formData.name?.charAt(0) || "U"}
-              </AvatarFallback>
-            </Avatar>
-            <Button variant="outline" size="sm" className="mb-4">Alterar foto</Button>
+            <div className="relative">
+              <Avatar className="h-24 w-24 mb-4">
+                <AvatarImage src={avatarUrl || ""} alt={formData.name || "Usuário"} />
+                <AvatarFallback className="text-xl bg-ambikes-orange text-white">
+                  {formData.name?.charAt(0) || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="absolute bottom-3 right-0 rounded-full"
+                onClick={handleUploadClick}
+                disabled={uploading}
+              >
+                <Camera className="h-4 w-4" />
+              </Button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </div>
             
             <form onSubmit={handleSaveProfile} className="w-full space-y-4">
               <div className="space-y-2">
