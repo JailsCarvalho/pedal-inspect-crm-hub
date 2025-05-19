@@ -49,7 +49,9 @@ export type Database = {
           email: string | null
           id: string
           name: string
+          notes: string | null
           phone: string | null
+          tax_id: string | null
         }
         Insert: {
           address?: string | null
@@ -58,7 +60,9 @@ export type Database = {
           email?: string | null
           id?: string
           name: string
+          notes?: string | null
           phone?: string | null
+          tax_id?: string | null
         }
         Update: {
           address?: string | null
@@ -67,7 +71,9 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string
+          notes?: string | null
           phone?: string | null
+          tax_id?: string | null
         }
         Relationships: []
       }

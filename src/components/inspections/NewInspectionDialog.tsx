@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -140,23 +139,24 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
       try {
         const { data, error } = await supabase
           .from("customers")
-          .select("id, name, email, tax_id, phone, notes")
-          .order("name");
+          .select("id, name, email, tax_id, phone, notes");
 
         if (error) {
           throw error;
         }
 
-        const formattedCustomers = data.map(customer => ({
-          id: customer.id,
-          name: customer.name,
-          email: customer.email || "",
-          taxId: customer.tax_id || "",
-          phone: customer.phone || "",
-          notes: customer.notes || "",
-        }));
-
-        setCustomers(formattedCustomers);
+        if (data) {
+          const formattedCustomers = data.map(customer => ({
+            id: customer.id,
+            name: customer.name,
+            email: customer.email || "",
+            taxId: customer.tax_id || "",
+            phone: customer.phone || "",
+            notes: customer.notes || "",
+          }));
+  
+          setCustomers(formattedCustomers);
+        }
       } catch (error) {
         console.error("Error fetching customers:", error);
         toast({

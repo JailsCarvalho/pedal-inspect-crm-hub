@@ -95,24 +95,25 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
       try {
         const { data, error } = await supabase
           .from("customers")
-          .select("id, name, email, phone, birthdate, address, created_at, tax_id, notes")
-          .order("name");
+          .select("id, name, email, phone, birthdate, address, created_at, tax_id, notes");
 
         if (error) throw error;
 
-        const formattedCustomers = data.map(customer => ({
-          id: customer.id,
-          name: customer.name,
-          taxId: customer.tax_id || "",
-          email: customer.email || "",
-          phone: customer.phone || "",
-          birthdate: customer.birthdate || "",
-          address: customer.address || "",
-          notes: customer.notes || "",
-          createdAt: customer.created_at
-        }));
-
-        setCustomers(formattedCustomers);
+        if (data) {
+          const formattedCustomers = data.map(customer => ({
+            id: customer.id,
+            name: customer.name,
+            taxId: customer.tax_id || "",
+            email: customer.email || "",
+            phone: customer.phone || "",
+            birthdate: customer.birthdate || "",
+            address: customer.address || "",
+            notes: customer.notes || "",
+            createdAt: customer.created_at
+          }));
+  
+          setCustomers(formattedCustomers);
+        }
       } catch (error) {
         console.error("Erro ao buscar clientes:", error);
         toast({
