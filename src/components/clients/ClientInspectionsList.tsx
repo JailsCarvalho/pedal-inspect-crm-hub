@@ -88,7 +88,7 @@ export const InspectionsList: React.FC<InspectionsListProps> = ({ inspections })
               </div>
               <div>
                 <p className="text-muted-foreground">Valor</p>
-                <p>{inspection.inspectionValue ? `R$ ${inspection.inspectionValue.toFixed(2)}` : "-"}</p>
+                <p>{inspection.inspectionValue ? `EUR ${inspection.inspectionValue.toFixed(2)}` : "-"}</p>
               </div>
             </div>
             

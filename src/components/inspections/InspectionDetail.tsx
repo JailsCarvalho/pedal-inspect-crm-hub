@@ -1,10 +1,11 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Inspection } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { ArrowLeft, Calendar, User, Bike, Wrench, CreditCard, PencilIcon, Check, MessageCircle } from "lucide-react";
+import { ArrowLeft, Calendar, User, Bike, Wrench, CreditCard, PencilIcon, Check, MessageCircle, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,8 @@ const InspectionDetail = () => {
             status, 
             notes,
             inspection_value,
+            labor_cost,
+            invoice_file,
             customer_id,
             customers(name, phone),
             bike_id,
@@ -56,7 +59,9 @@ const InspectionDetail = () => {
           nextInspectionDate: data.next_inspection_date,
           status: data.status as "scheduled" | "completed" | "pending" | "cancelled",
           notes: data.notes || "",
-          inspectionValue: data.inspection_value
+          inspectionValue: data.inspection_value,
+          laborCost: data.labor_cost,
+          invoiceFile: data.invoice_file
         };
         
         setInspection(transformedInspection);
@@ -111,7 +116,9 @@ const InspectionDetail = () => {
         .update({
           status: data.status,
           notes: data.notes,
-          inspection_value: data.inspectionValue
+          inspection_value: data.inspectionValue,
+          labor_cost: data.laborCost,
+          invoice_file: data.invoiceFile
         })
         .eq("id", id);
       
@@ -122,7 +129,9 @@ const InspectionDetail = () => {
         ...inspection,
         status: data.status || inspection.status,
         notes: data.notes !== undefined ? data.notes : inspection.notes,
-        inspectionValue: data.inspectionValue
+        inspectionValue: data.inspectionValue,
+        laborCost: data.laborCost,
+        invoiceFile: data.invoiceFile
       });
       
       toast({
@@ -296,19 +305,43 @@ const InspectionDetail = () => {
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-lg font-medium">Valor</h3>
-                <div className="flex items-center mt-1">
-                  <CreditCard className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="font-medium">
-                    {inspection.inspectionValue !== null && inspection.inspectionValue !== undefined
-                      ? `EUR ${Number(inspection.inspectionValue).toFixed(2)}`
-                      : "Valor não registrado"}
-                  </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-lg font-medium">Valor da inspeção</h3>
+                  <div className="flex items-center mt-1">
+                    <CreditCard className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span className="font-medium">
+                      {inspection.inspectionValue !== null && inspection.inspectionValue !== undefined
+                        ? `EUR ${Number(inspection.inspectionValue).toFixed(2)}`
+                        : "Valor não registrado"}
+                    </span>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium">Valor da mão de obra</h3>
+                  <div className="flex items-center mt-1">
+                    <Wrench className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span className="font-medium">
+                      {inspection.laborCost !== null && inspection.laborCost !== undefined
+                        ? `EUR ${Number(inspection.laborCost).toFixed(2)}`
+                        : "Valor não registrado"}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {inspection.invoiceFile && (
+            <div>
+              <h3 className="text-lg font-medium mb-2">Fatura</h3>
+              <div className="flex items-center">
+                <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span>{inspection.invoiceFile}</span>
+              </div>
+            </div>
+          )}
 
           {inspection.notes && (
             <div>
