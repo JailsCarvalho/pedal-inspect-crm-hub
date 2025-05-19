@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Inspection } from "@/types";
-import { FileInput } from "@/components/ui/file-input";
 import { Paperclip } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface EditInspectionFormProps {
   inspection: Inspection;
@@ -23,6 +23,9 @@ const EditInspectionForm = ({
   isSubmitting,
   onCancel,
 }: EditInspectionFormProps) => {
+  const { toast } = useToast();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const form = useForm({
     defaultValues: {
       status: inspection.status,
@@ -34,20 +37,29 @@ const EditInspectionForm = ({
   });
 
   const handleSubmit = (data: any) => {
-    onSubmit({
-      status: data.status,
-      notes: data.notes,
-      inspectionValue: parseFloat(data.inspectionValue) || 0,
-      laborCost: parseFloat(data.laborCost) || 0,
-      invoiceFile: data.invoiceFile,
-    });
+    try {
+      onSubmit({
+        status: data.status,
+        notes: data.notes,
+        inspectionValue: parseFloat(data.inspectionValue) || 0,
+        laborCost: parseFloat(data.laborCost) || 0,
+        invoiceFile: selectedFile ? selectedFile.name : data.invoiceFile,
+      });
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Ocorreu um erro ao salvar a inspeção.",
+      });
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      // In a real application, this would upload the file to storage
-      // For now, we'll just set the file name as a placeholder
-      form.setValue('invoiceFile', e.target.files[0].name);
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      form.setValue('invoiceFile', file.name);
     }
   };
 

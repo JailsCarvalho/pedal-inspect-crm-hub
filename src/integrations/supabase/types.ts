@@ -85,6 +85,8 @@ export type Database = {
           date: string
           id: string
           inspection_value: number | null
+          invoice_file: string | null
+          labor_cost: number | null
           next_inspection_date: string
           notes: string | null
           status: string
@@ -96,6 +98,8 @@ export type Database = {
           date?: string
           id?: string
           inspection_value?: number | null
+          invoice_file?: string | null
+          labor_cost?: number | null
           next_inspection_date: string
           notes?: string | null
           status?: string
@@ -107,6 +111,8 @@ export type Database = {
           date?: string
           id?: string
           inspection_value?: number | null
+          invoice_file?: string | null
+          labor_cost?: number | null
           next_inspection_date?: string
           notes?: string | null
           status?: string
