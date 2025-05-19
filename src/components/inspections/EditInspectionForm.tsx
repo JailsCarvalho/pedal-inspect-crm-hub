@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Inspection } from "@/types";
+import { FileInput } from "@/components/ui/file-input";
+import { Paperclip } from "lucide-react";
 
 interface EditInspectionFormProps {
   inspection: Inspection;
@@ -26,6 +28,8 @@ const EditInspectionForm = ({
       status: inspection.status,
       notes: inspection.notes || "",
       inspectionValue: inspection.inspectionValue?.toString() || "0",
+      laborCost: inspection.laborCost?.toString() || "0",
+      invoiceFile: inspection.invoiceFile || "",
     },
   });
 
@@ -34,7 +38,17 @@ const EditInspectionForm = ({
       status: data.status,
       notes: data.notes,
       inspectionValue: parseFloat(data.inspectionValue) || 0,
+      laborCost: parseFloat(data.laborCost) || 0,
+      invoiceFile: data.invoiceFile,
     });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      // In a real application, this would upload the file to storage
+      // For now, we'll just set the file name as a placeholder
+      form.setValue('invoiceFile', e.target.files[0].name);
+    }
   };
 
   return (
@@ -67,21 +81,77 @@ const EditInspectionForm = ({
           )}
         />
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="inspectionValue"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Valor da Inspeção (€)</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="0.00"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="laborCost"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Valor da Mão de Obra (€)</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="0.00"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <FormField
           control={form.control}
-          name="inspectionValue"
+          name="invoiceFile"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Valor da Inspeção (€)</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="0.00"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...field}
+              <FormLabel>Fatura</FormLabel>
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="file" 
+                  id="invoiceFile" 
+                  className="hidden" 
+                  onChange={handleFileChange}
                 />
-              </FormControl>
+                <FormControl>
+                  <Input 
+                    value={field.value || ""}
+                    placeholder="Nenhum arquivo selecionado"
+                    readOnly
+                  />
+                </FormControl>
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById('invoiceFile')?.click()}
+                >
+                  <Paperclip className="h-4 w-4 mr-2" />
+                  Anexar
+                </Button>
+              </div>
               <FormMessage />
             </FormItem>
           )}

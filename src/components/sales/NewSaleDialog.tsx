@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Paperclip } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -28,16 +28,19 @@ const saleFormSchema = z.object({
   bikeSerialNumber: z.string().optional(),
   price: z.coerce.number().min(0.01, "Preço deve ser maior que zero"),
   date: z.string().min(1, "Data é obrigatória"),
+  invoiceFile: z.string().optional(),
   notes: z.string().optional(),
 });
 
 // Schema para validação de novo cliente
 const newCustomerSchema = z.object({
   name: z.string().min(3, "Nome é obrigatório e deve ter pelo menos 3 caracteres"),
+  taxId: z.string().optional(),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   phone: z.string().optional(),
   birthdate: z.date().optional().nullable(),
   address: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 type SaleFormValues = z.infer<typeof saleFormSchema>;
@@ -68,6 +71,7 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
       bikeSerialNumber: "",
       price: undefined,
       date: format(new Date(), "yyyy-MM-dd"),
+      invoiceFile: "",
       notes: "",
     },
   });
@@ -76,10 +80,12 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
     resolver: zodResolver(newCustomerSchema),
     defaultValues: {
       name: "",
+      taxId: "",
       email: "",
       phone: "",
       address: "",
       birthdate: null,
+      notes: "",
     },
   });
 
@@ -89,7 +95,7 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
       try {
         const { data, error } = await supabase
           .from("customers")
-          .select("id, name, email, phone, birthdate, address, created_at")
+          .select("id, name, email, phone, birthdate, address, created_at, tax_id, notes")
           .order("name");
 
         if (error) throw error;
@@ -97,10 +103,12 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
         const formattedCustomers = data.map(customer => ({
           id: customer.id,
           name: customer.name,
+          taxId: customer.tax_id || "",
           email: customer.email || "",
           phone: customer.phone || "",
           birthdate: customer.birthdate || "",
           address: customer.address || "",
+          notes: customer.notes || "",
           createdAt: customer.created_at
         }));
 
@@ -120,6 +128,14 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
     }
   }, [open, toast]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      // In a real application, we would upload the file to storage
+      // For now, we'll just set the filename in the form
+      saleForm.setValue('invoiceFile', e.target.files[0].name);
+    }
+  };
+
   const onSubmit = async (data: CombinedFormValues) => {
     try {
       setIsLoading(true);
@@ -133,10 +149,12 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
           .from("customers")
           .insert({
             name: data.newCustomer.name,
+            tax_id: data.newCustomer.taxId || null,
             email: data.newCustomer.email || null,
             phone: data.newCustomer.phone || null,
             birthdate: data.newCustomer.birthdate ? format(data.newCustomer.birthdate, "yyyy-MM-dd") : null,
             address: data.newCustomer.address || null,
+            notes: data.newCustomer.notes || null,
           })
           .select()
           .single();
@@ -184,6 +202,7 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
           bike_serial_number: data.bikeSerialNumber || null,
           price: data.price,
           date: data.date,
+          invoice_file: data.invoiceFile || null,
           notes: data.notes || null,
         })
         .select()
@@ -233,7 +252,7 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
         onSubmit(saleData);
       }
     } else {
-      const isSaleValid = await saleForm.trigger(["productName", "bikeModel", "bikeSerialNumber", "price", "date", "notes"]);
+      const isSaleValid = await saleForm.trigger(["productName", "bikeModel", "bikeSerialNumber", "price", "date", "invoiceFile", "notes"]);
       const isCustomerValid = await newCustomerForm.trigger();
       
       if (isSaleValid && isCustomerValid) {
@@ -311,12 +330,12 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={newCustomerForm.control}
-                      name="email"
+                      name="taxId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>Contribuinte</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="email@exemplo.com" {...field} disabled={isLoading} value={field.value || ""} />
+                            <Input placeholder="NIF" {...field} disabled={isLoading} value={field.value || ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -339,6 +358,20 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={newCustomerForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="email@exemplo.com" {...field} disabled={isLoading} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
                     <FormField
                       control={newCustomerForm.control}
                       name="birthdate"
@@ -394,6 +427,20 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
                         <FormLabel>Endereço</FormLabel>
                         <FormControl>
                           <Input placeholder="Endereço completo" {...field} disabled={isLoading} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={newCustomerForm.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nota</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Observações sobre o cliente" {...field} disabled={isLoading} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -502,6 +549,40 @@ const NewSaleDialog = ({ open, onOpenChange, onSaleCreated }: NewSaleDialogProps
                       )}
                     />
                   </div>
+                  
+                  <FormField
+                    control={saleForm.control}
+                    name="invoiceFile"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fatura</FormLabel>
+                        <div className="flex items-center gap-2">
+                          <Input 
+                            type="file" 
+                            id="invoiceFileUpload" 
+                            className="hidden" 
+                            onChange={handleFileChange}
+                          />
+                          <FormControl>
+                            <Input 
+                              value={field.value || ""}
+                              placeholder="Nenhuma fatura anexada"
+                              readOnly
+                            />
+                          </FormControl>
+                          <Button 
+                            type="button"
+                            variant="outline"
+                            onClick={() => document.getElementById('invoiceFileUpload')?.click()}
+                          >
+                            <Paperclip className="h-4 w-4 mr-2" />
+                            Anexar
+                          </Button>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={saleForm.control}

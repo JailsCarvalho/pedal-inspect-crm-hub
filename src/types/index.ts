@@ -2,10 +2,12 @@
 export interface Customer {
   id: string;
   name: string;
+  taxId?: string;
   email: string;
   phone: string;
   birthdate: string;
   address: string;
+  notes?: string;
   createdAt: string;
 }
 
@@ -20,6 +22,8 @@ export interface Inspection {
   status: "scheduled" | "completed" | "pending" | "cancelled";
   notes?: string;
   inspectionValue?: number;
+  laborCost?: number;
+  invoiceFile?: string;
 }
 
 export interface Sale {
@@ -32,6 +36,7 @@ export interface Sale {
   price: number;
   date: string;
   notes?: string;
+  invoiceFile?: string;
 }
 
 export interface SalesData {

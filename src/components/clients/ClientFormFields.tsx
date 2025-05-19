@@ -11,14 +11,17 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { UseFormReturn } from "react-hook-form";
 import * as z from "zod";
+import { Textarea } from "@/components/ui/textarea";
 
 // Schema de validação do formulário
 const formSchema = z.object({
   name: z.string().min(3, { message: "Nome é obrigatório e deve ter pelo menos 3 caracteres" }),
+  taxId: z.string().optional(),
   email: z.string().email({ message: "Email inválido" }).optional().or(z.literal("")),
   phone: z.string().optional(),
   birthdate: z.date().optional().nullable(),
   address: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 interface ClientFormFieldsProps {
@@ -45,12 +48,12 @@ export const ClientFormFields: React.FC<ClientFormFieldsProps> = ({ form }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
-          name="email"
+          name="taxId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Contribuinte</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="email@exemplo.com" {...field} value={field.value || ""} />
+                <Input placeholder="NIF" {...field} value={field.value || ""} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -72,6 +75,20 @@ export const ClientFormFields: React.FC<ClientFormFieldsProps> = ({ form }) => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="email@exemplo.com" {...field} value={field.value || ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
         <FormField
           control={form.control}
           name="birthdate"
@@ -135,6 +152,20 @@ export const ClientFormFields: React.FC<ClientFormFieldsProps> = ({ form }) => {
             <FormLabel>Endereço</FormLabel>
             <FormControl>
               <Input placeholder="Endereço completo" {...field} value={field.value || ""} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      
+      <FormField
+        control={form.control}
+        name="notes"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Nota</FormLabel>
+            <FormControl>
+              <Textarea placeholder="Observações sobre o cliente" {...field} value={field.value || ""} />
             </FormControl>
             <FormMessage />
           </FormItem>

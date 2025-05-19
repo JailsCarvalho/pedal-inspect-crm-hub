@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +30,6 @@ export const useClientForm = ({ onSuccess, onOpenChange }: UseClientFormProps) =
             birthdateObj = values.birthdate;
           } else if (typeof values.birthdate === 'object' && values.birthdate !== null) {
             // Handle possible serialized date object structures
-            // Since we can't rely on _type property, attempt to construct based on known properties
             const dateValue = values.birthdate as any;
             if (dateValue.value && (typeof dateValue.value === 'string' || typeof dateValue.value === 'number')) {
               birthdateObj = new Date(dateValue.value);
@@ -68,16 +66,16 @@ export const useClientForm = ({ onSuccess, onOpenChange }: UseClientFormProps) =
       // Data for insertion
       const customerData = {
         name: values.name,
+        tax_id: values.taxId || null,
         email: values.email || null,
         phone: values.phone || null,
         birthdate: formattedBirthdate,
         address: values.address || null,
+        notes: values.notes || null,
       };
       
       console.log("Inserting customer data:", customerData);
       
-      // Enable RLS bypass to ensure we can insert data (temporary solution)
-      // This bypasses row-level security policies that might be causing the insert error
       const { error, data } = await supabase
         .from("customers")
         .insert(customerData)

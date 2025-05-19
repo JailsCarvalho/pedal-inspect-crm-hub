@@ -24,10 +24,12 @@ export const NewClientDialog: React.FC<NewClientDialogProps> = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      taxId: "",
       email: "",
       phone: "",
       address: "",
       birthdate: null,
+      notes: "",
     },
   });
 

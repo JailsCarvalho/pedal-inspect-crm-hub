@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Calendar, Bike } from "lucide-react";
+import { Calendar, Bike, Paperclip } from "lucide-react";
 import { format, addYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +39,15 @@ const formSchema = z.object({
   nextInspectionDate: z.date(),
   status: z.enum(["scheduled", "completed", "pending", "cancelled"]),
   notes: z.string().optional(),
+  laborCost: z.string().optional(),
+  invoiceFile: z.string().optional(),
+  // For new customers
+  customerInfo: z.object({
+    name: z.string().optional(),
+    taxId: z.string().optional(),
+    phone: z.string().optional(),
+    notes: z.string().optional(),
+  }).optional(),
 });
 
 interface NewInspectionDialogProps {
@@ -56,6 +65,9 @@ interface Customer {
   id: string;
   name: string;
   email: string;
+  taxId?: string;
+  phone?: string;
+  notes?: string;
 }
 
 export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
@@ -74,6 +86,7 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(initialCustomerId || null);
   const [useExistingBike, setUseExistingBike] = useState(false);
   const [selectedBike, setSelectedBike] = useState<string | null>(null);
+  const [isNewCustomer, setIsNewCustomer] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -85,6 +98,14 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
       nextInspectionDate: initialNextInspectionDate || addYears(new Date(), 1),
       status: "scheduled" as const,
       notes: "",
+      laborCost: "0",
+      invoiceFile: "",
+      customerInfo: {
+        name: "",
+        taxId: "",
+        phone: "",
+        notes: "",
+      },
     },
   });
 
@@ -119,14 +140,23 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
       try {
         const { data, error } = await supabase
           .from("customers")
-          .select("id, name, email")
+          .select("id, name, email, tax_id, phone, notes")
           .order("name");
 
         if (error) {
           throw error;
         }
 
-        setCustomers(data || []);
+        const formattedCustomers = data.map(customer => ({
+          id: customer.id,
+          name: customer.name,
+          email: customer.email || "",
+          taxId: customer.tax_id || "",
+          phone: customer.phone || "",
+          notes: customer.notes || "",
+        }));
+
+        setCustomers(formattedCustomers);
       } catch (error) {
         console.error("Error fetching customers:", error);
         toast({
@@ -166,8 +196,15 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
 
   // Handle customer change
   const handleCustomerChange = (customerId: string) => {
-    setSelectedCustomer(customerId);
-    form.setValue("customerId", customerId);
+    if (customerId === "new") {
+      setIsNewCustomer(true);
+      setSelectedCustomer(null);
+      form.setValue("customerId", "");
+    } else {
+      setIsNewCustomer(false);
+      setSelectedCustomer(customerId);
+      form.setValue("customerId", customerId);
+    }
   };
 
   // Handle bike change
@@ -180,8 +217,38 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      // In a real application, this would upload the file to storage
+      // For now, we'll just set the filename in the form
+      form.setValue('invoiceFile', e.target.files[0].name);
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      let customerId = values.customerId;
+      
+      // If it's a new customer, create the customer first
+      if (isNewCustomer && values.customerInfo) {
+        const { data: customerData, error: customerError } = await supabase
+          .from("customers")
+          .insert({
+            name: values.customerInfo.name,
+            tax_id: values.customerInfo.taxId || null,
+            phone: values.customerInfo.phone || null,
+            notes: values.customerInfo.notes || null,
+          })
+          .select('id')
+          .single();
+
+        if (customerError) {
+          throw customerError;
+        }
+
+        customerId = customerData.id;
+      }
+      
       // First, get or create a bike
       let bikeId;
       
@@ -192,7 +259,7 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
         const { data: bikeData, error: bikeError } = await supabase
           .from("bikes")
           .insert({
-            customer_id: values.customerId,
+            customer_id: customerId,
             model: values.bikeModel,
             serial_number: values.bikeSerialNumber || null,
           })
@@ -214,10 +281,12 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
         .from("inspections")
         .insert({
           bike_id: bikeId,
-          customer_id: values.customerId,
+          customer_id: customerId,
           date: format(values.date, "yyyy-MM-dd'T'HH:mm:ss"),
           next_inspection_date: format(nextInspectionDate, "yyyy-MM-dd'T'HH:mm:ss"),
           status: values.status,
+          labor_cost: parseFloat(values.laborCost || "0"),
+          invoice_file: values.invoiceFile || null,
           notes: values.notes || null,
         });
 
@@ -269,6 +338,7 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
                         <SelectValue placeholder="Selecionar cliente" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="new">Novo Cliente</SelectItem>
                         {customers.map((customer) => (
                           <SelectItem key={customer.id} value={customer.id}>
                             {customer.name} {customer.email ? `(${customer.email})` : ''}
@@ -281,6 +351,71 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
                 </FormItem>
               )}
             />
+
+            {/* New Customer Info */}
+            {isNewCustomer && (
+              <div className="space-y-4 border p-4 rounded-md">
+                <h3 className="text-md font-medium">Informações do Novo Cliente</h3>
+                
+                <FormField
+                  control={form.control}
+                  name="customerInfo.name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome*</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome completo" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="customerInfo.taxId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contribuinte</FormLabel>
+                        <FormControl>
+                          <Input placeholder="NIF" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="customerInfo.phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telefone</FormLabel>
+                        <FormControl>
+                          <Input placeholder="(00) 00000-0000" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="customerInfo.notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nota</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Observações sobre o cliente" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
             {/* Bike Selection - Only show if customer is selected */}
             {selectedCustomer && existingBikes.length > 0 && (
@@ -450,6 +585,62 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
                       </SelectContent>
                     </Select>
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Labor Cost */}
+            <FormField
+              control={form.control}
+              name="laborCost"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valor da Mão de Obra (€)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="0.00"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Invoice File Upload */}
+            <FormField
+              control={form.control}
+              name="invoiceFile"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fatura</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      type="file" 
+                      id="inspectionInvoiceFile" 
+                      className="hidden" 
+                      onChange={handleFileChange}
+                    />
+                    <FormControl>
+                      <Input 
+                        value={field.value || ""}
+                        placeholder="Nenhuma fatura anexada"
+                        readOnly
+                      />
+                    </FormControl>
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('inspectionInvoiceFile')?.click()}
+                    >
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      Anexar
+                    </Button>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

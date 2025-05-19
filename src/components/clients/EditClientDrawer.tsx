@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,7 +36,15 @@ export const EditClientDrawer = ({
 
   // Preparar dados iniciais do formulário
   const getFormDefaultValues = () => {
-    if (!client) return { name: "", email: "", phone: "", birthdate: null, address: "" };
+    if (!client) return { 
+      name: "", 
+      taxId: "", 
+      email: "", 
+      phone: "", 
+      birthdate: null, 
+      address: "",
+      notes: "" 
+    };
 
     // Converter a string de data para objeto Date se existir
     let birthdate = null;
@@ -53,10 +62,12 @@ export const EditClientDrawer = ({
 
     return {
       name: client.name,
+      taxId: client.taxId || "",
       email: client.email || "",
       phone: client.phone || "",
       birthdate: birthdate,
       address: client.address || "",
+      notes: client.notes || "",
     };
   };
 
@@ -92,10 +103,12 @@ export const EditClientDrawer = ({
       // Dados para atualização
       const customerData = {
         name: values.name,
+        tax_id: values.taxId || null,
         email: values.email || null,
         phone: values.phone || null,
         birthdate: formattedBirthdate,
         address: values.address || null,
+        notes: values.notes || null,
       };
       
       // Atualizar cliente no Supabase
