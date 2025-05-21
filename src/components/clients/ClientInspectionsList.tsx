@@ -5,7 +5,7 @@ import { Inspection } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bike } from "lucide-react";
+import { Bike, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -50,10 +50,15 @@ export const InspectionsList: React.FC<InspectionsListProps> = ({ inspections })
     );
   }
 
+  const handleViewInvoice = (invoiceFile: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent navigation to inspection details
+    window.open(invoiceFile, '_blank');
+  };
+
   return (
     <div className="space-y-4">
       {inspections.map((inspection) => (
-        <Card key={inspection.id}>
+        <Card key={inspection.id} className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => navigate(`/inspections/${inspection.id}`)}>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
@@ -67,17 +72,10 @@ export const InspectionsList: React.FC<InspectionsListProps> = ({ inspections })
               </div>
               <div className="flex items-center space-x-2">
                 {getStatusBadge(inspection.status)}
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => navigate(`/inspections/${inspection.id}`)}
-                >
-                  Ver detalhes
-                </Button>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
               <div>
                 <p className="text-muted-foreground">Data</p>
                 <p>{formatDate(inspection.date)}</p>
@@ -87,15 +85,35 @@ export const InspectionsList: React.FC<InspectionsListProps> = ({ inspections })
                 <p>{formatDate(inspection.nextInspectionDate)}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Valor</p>
-                <p>{inspection.inspectionValue ? `EUR ${inspection.inspectionValue.toFixed(2)}` : "-"}</p>
+                <p className="text-muted-foreground">Valor inspeção</p>
+                <p>{inspection.inspectionValue !== undefined && inspection.inspectionValue !== null ? `EUR ${Number(inspection.inspectionValue).toFixed(2)}` : "-"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Valor mão de obra</p>
+                <p>{inspection.laborCost !== undefined && inspection.laborCost !== null ? `EUR ${Number(inspection.laborCost).toFixed(2)}` : "-"}</p>
               </div>
             </div>
             
-            {inspection.notes && (
-              <div className="mt-2">
-                <p className="text-muted-foreground text-sm">Observações</p>
-                <p className="text-sm">{inspection.notes}</p>
+            {(inspection.notes || inspection.invoiceFile) && (
+              <div className="mt-4 flex justify-between items-start">
+                {inspection.notes && (
+                  <div className="max-w-3xl">
+                    <p className="text-muted-foreground text-sm">Observações</p>
+                    <p className="text-sm">{inspection.notes}</p>
+                  </div>
+                )}
+                
+                {inspection.invoiceFile && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={(e) => handleViewInvoice(inspection.invoiceFile!, e)}
+                  >
+                    <FileText className="h-4 w-4" />
+                    <span className="hidden sm:inline">Ver fatura</span>
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>

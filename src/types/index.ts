@@ -43,6 +43,8 @@ export interface SalesData {
   month: string;
   inspections: number;
   sales: number;
+  inspectionValue?: number;
+  salesCount?: number;
 }
 
 export type NotificationType = "inspection" | "birthday" | "system";

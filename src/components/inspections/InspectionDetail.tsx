@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Inspection } from "@/types";
@@ -217,6 +216,26 @@ const InspectionDetail = () => {
     });
   };
 
+  const handleViewInvoice = () => {
+    if (!inspection?.invoiceFile) {
+      toast({
+        title: "Erro",
+        description: "Nenhuma fatura disponível para visualização.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // We'll use a simple approach to view the PDF by opening it in a new tab
+    // In a real-world app, you might want to fetch the file from storage and display it in a modal
+    window.open(inspection.invoiceFile, '_blank');
+    
+    toast({
+      title: "Visualizando fatura",
+      description: "A fatura está sendo aberta em uma nova aba."
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -338,7 +357,14 @@ const InspectionDetail = () => {
               <h3 className="text-lg font-medium mb-2">Fatura</h3>
               <div className="flex items-center">
                 <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span>{inspection.invoiceFile}</span>
+                <span className="mr-2">{inspection.invoiceFile}</span>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleViewInvoice}
+                >
+                  <FileText className="h-4 w-4 mr-1" /> Visualizar PDF
+                </Button>
               </div>
             </div>
           )}
