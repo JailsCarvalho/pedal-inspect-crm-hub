@@ -1,112 +1,232 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { 
+  Table, 
+  TableBody, 
+  TableCaption, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Sale } from "@/types";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
-const SalesList = () => {
+interface Sale {
+  id: string;
+  date: string;
+  product_name: string;
+  price: number;
+  customer_name: string;
+  bike_model?: string;
+  invoice_file?: string;
+  customer_id?: string;
+}
+
+interface SalesListProps {
+  onViewInvoice?: (invoiceFile: string) => void;
+}
+
+const SalesList: React.FC<SalesListProps> = ({ onViewInvoice }) => {
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchSales = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Busca as vendas e as informações dos clientes
-        const { data, error } = await supabase
-          .from("sales")
-          .select(`
-            id,
-            customer_id,
-            product_name,
-            bike_model,
-            bike_serial_number,
-            price,
-            date,
-            notes,
-            customers (name)
-          `)
-          .order('date', { ascending: false });
-        
-        if (error) throw error;
-        
-        // Mapeia os resultados para o formato do componente
-        const formattedSales = data.map((sale: any): Sale => ({
-          id: sale.id,
-          customerId: sale.customer_id,
-          customerName: sale.customers?.name || "Cliente não encontrado",
-          productName: sale.product_name,
-          bikeModel: sale.bike_model,
-          bikeSerialNumber: sale.bike_serial_number,
-          price: sale.price,
-          date: sale.date,
-          notes: sale.notes
-        }));
-        
-        setSales(formattedSales);
-      } catch (error) {
-        console.error("Erro ao buscar vendas:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Não foi possível carregar a lista de vendas."
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     fetchSales();
-  }, [toast]);
+  }, []);
+
+  const fetchSales = async () => {
+    setIsLoading(true);
+    try {
+      // Query sales with customer names
+      const { data, error } = await supabase
+        .from("sales")
+        .select(`
+          id, 
+          date, 
+          product_name, 
+          price, 
+          customer_id,
+          customers (name),
+          bike_model,
+          invoice_file
+        `)
+        .order("date", { ascending: false });
+
+      if (error) throw error;
+      
+      // Format the data to include customer name
+      const formattedSales = data.map((sale) => ({
+        id: sale.id,
+        date: sale.date,
+        product_name: sale.product_name,
+        price: sale.price,
+        customer_name: sale.customers?.name || "Cliente não especificado",
+        bike_model: sale.bike_model,
+        invoice_file: sale.invoice_file,
+        customer_id: sale.customer_id,
+      }));
+      
+      setSales(formattedSales);
+    } catch (error) {
+      console.error("Error fetching sales:", error);
+      toast({
+        title: "Erro ao carregar vendas",
+        description: "Não foi possível carregar a lista de vendas.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  const handleViewInvoice = (invoiceFile: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent navigation
+    if (onViewInvoice) {
+      onViewInvoice(invoiceFile);
+    } else {
+      window.open(invoiceFile, '_blank');
+    }
+  };
+
+  const handleViewDetails = (saleId: string) => {
+    // In a real application, this would navigate to a sale details page
+    toast({
+      title: "Detalhes da venda",
+      description: `Visualizando detalhes da venda ${saleId.substring(0, 8)}`,
+    });
+    // For now we'll just show a toast, but you could navigate to a details page
+    // navigate(`/sales/${saleId}`);
+  };
+
+  const goToCustomerDetails = (customerId?: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent other click handlers
+    if (customerId) {
+      navigate(`/clients/${customerId}`);
+    }
+  };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ambikes-orange"></div>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ambikes-orange"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (sales.length === 0) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Nenhuma venda registrada.</p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Data</TableHead>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Produto</TableHead>
-            <TableHead>Modelo da Bike</TableHead>
-            <TableHead>Valor</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sales.length === 0 ? (
+    <Card>
+      <CardHeader>
+        <CardTitle>Histórico de vendas</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-4">
-                Nenhuma venda registrada
-              </TableCell>
+              <TableHead>Data</TableHead>
+              <TableHead>Produto</TableHead>
+              <TableHead>Cliente</TableHead>
+              <TableHead className="text-right">Preço</TableHead>
+              <TableHead></TableHead>
             </TableRow>
-          ) : (
-            sales.map((sale) => (
-              <TableRow key={sale.id}>
+          </TableHeader>
+          <TableBody>
+            {sales.map((sale) => (
+              <TableRow 
+                key={sale.id} 
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => handleViewDetails(sale.id)}
+              >
+                <TableCell>{formatDate(sale.date)}</TableCell>
                 <TableCell>
-                  {format(new Date(sale.date), "dd/MM/yyyy", { locale: ptBR })}
+                  <div>
+                    {sale.product_name}
+                    {sale.bike_model && (
+                      <div className="text-sm text-muted-foreground">
+                        Bicicleta: {sale.bike_model}
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
-                <TableCell>{sale.customerName}</TableCell>
-                <TableCell>{sale.productName}</TableCell>
-                <TableCell>{sale.bikeModel || "-"}</TableCell>
-                <TableCell>EUR {sale.price.toFixed(2).replace(".", ",")}</TableCell>
+                <TableCell>
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto text-foreground hover:text-ambikes-orange"
+                    onClick={(e) => goToCustomerDetails(sale.customer_id, e)}
+                  >
+                    {sale.customer_name}
+                  </Button>
+                </TableCell>
+                <TableCell className="text-right font-medium">
+                  {sale.price !== undefined && sale.price !== null
+                    ? `€${sale.price.toFixed(2)}`
+                    : "-"
+                  }
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-2">
+                    {sale.invoice_file && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={(e) => handleViewInvoice(sale.invoice_file!, e)} 
+                        title="Ver fatura"
+                      >
+                        <FileText className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleViewDetails(sale.id)}
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 };
 

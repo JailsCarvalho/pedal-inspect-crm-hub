@@ -12,7 +12,11 @@ import { useToast } from "@/hooks/use-toast";
 import EditInspectionForm from "./EditInspectionForm";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
-const InspectionDetail = () => {
+interface InspectionDetailProps {
+  onViewInvoice?: (invoiceFile: string) => void;
+}
+
+const InspectionDetail: React.FC<InspectionDetailProps> = ({ onViewInvoice }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -226,13 +230,17 @@ const InspectionDetail = () => {
       return;
     }
 
-    // We'll use a simple approach to view the PDF by opening it in a new tab
-    // In a real-world app, you might want to fetch the file from storage and display it in a modal
-    window.open(inspection.invoiceFile, '_blank');
+    // If onViewInvoice prop is provided, use it, otherwise open PDF in new tab
+    if (onViewInvoice) {
+      onViewInvoice(inspection.invoiceFile);
+    } else {
+      // Fallback to opening in a new tab
+      window.open(inspection.invoiceFile, '_blank');
+    }
     
     toast({
       title: "Visualizando fatura",
-      description: "A fatura está sendo aberta em uma nova aba."
+      description: "A fatura está sendo aberta."
     });
   };
 
@@ -352,7 +360,7 @@ const InspectionDetail = () => {
             </div>
           </div>
 
-          {inspection.invoiceFile && (
+          {inspection?.invoiceFile && (
             <div>
               <h3 className="text-lg font-medium mb-2">Fatura</h3>
               <div className="flex items-center">
