@@ -196,6 +196,16 @@ const Reports = () => {
     });
   };
 
+  // Handle date range selection from calendar
+  const handleDateRangeSelect = (range: { from?: Date; to?: Date }) => {
+    if (range.from) {
+      setDateRange({
+        from: range.from,
+        to: range.to || range.from
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -230,8 +240,8 @@ const Reports = () => {
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="range"
-                selected={dateRange}
-                onSelect={(range) => range && setDateRange(range)}
+                selected={{ from: dateRange.from, to: dateRange.to }}
+                onSelect={handleDateRangeSelect}
                 initialFocus
                 className={cn("p-3 pointer-events-auto")}
               />
