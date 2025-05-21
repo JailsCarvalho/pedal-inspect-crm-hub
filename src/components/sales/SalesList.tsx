@@ -66,21 +66,30 @@ const SalesList: React.FC<SalesListProps> = ({ onViewInvoice }) => {
         `)
         .order("date", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching sales:", error);
+        throw error;
+      }
       
-      // Format the data to include customer name
-      const formattedSales = data.map((sale) => ({
-        id: sale.id,
-        date: sale.date,
-        product_name: sale.product_name,
-        price: sale.price,
-        customer_name: sale.customers?.name || "Cliente não especificado",
-        bike_model: sale.bike_model,
-        invoice_file: sale.invoice_file,
-        customer_id: sale.customer_id,
-      }));
-      
-      setSales(formattedSales);
+      // Ensure data is an array before mapping
+      if (Array.isArray(data)) {
+        // Format the data to include customer name
+        const formattedSales = data.map((sale) => ({
+          id: sale.id,
+          date: sale.date,
+          product_name: sale.product_name,
+          price: sale.price,
+          customer_name: sale.customers?.name || "Cliente não especificado",
+          bike_model: sale.bike_model,
+          invoice_file: sale.invoice_file,
+          customer_id: sale.customer_id,
+        }));
+        
+        setSales(formattedSales);
+      } else {
+        setSales([]);
+        console.error("Unexpected data format:", data);
+      }
     } catch (error) {
       console.error("Error fetching sales:", error);
       toast({
@@ -101,17 +110,22 @@ const SalesList: React.FC<SalesListProps> = ({ onViewInvoice }) => {
     }
   };
 
-  const handleViewInvoice = (invoiceFile: string, e: React.MouseEvent) => {
+  const handleViewInvoice = (invoiceFile: string | undefined, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent navigation
-    if (onViewInvoice) {
+    if (invoiceFile && onViewInvoice) {
       onViewInvoice(invoiceFile);
-    } else {
+    } else if (invoiceFile) {
       window.open(invoiceFile, '_blank');
+    } else {
+      toast({
+        title: "Fatura não disponível",
+        description: "Esta venda não possui uma fatura associada.",
+        variant: "default",
+      });
     }
   };
 
   const handleViewDetails = (saleId: string) => {
-    // In a real application, this would navigate to a sale details page
     toast({
       title: "Detalhes da venda",
       description: `Visualizando detalhes da venda ${saleId.substring(0, 8)}`,
@@ -206,7 +220,7 @@ const SalesList: React.FC<SalesListProps> = ({ onViewInvoice }) => {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={(e) => handleViewInvoice(sale.invoice_file!, e)} 
+                        onClick={(e) => handleViewInvoice(sale.invoice_file, e)} 
                         title="Ver fatura"
                       >
                         <FileText className="h-4 w-4" />
@@ -216,6 +230,7 @@ const SalesList: React.FC<SalesListProps> = ({ onViewInvoice }) => {
                       variant="ghost" 
                       size="icon"
                       onClick={() => handleViewDetails(sale.id)}
+                      title="Ver detalhes"
                     >
                       <ArrowRight className="h-4 w-4" />
                     </Button>

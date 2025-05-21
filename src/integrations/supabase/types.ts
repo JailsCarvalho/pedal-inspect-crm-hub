@@ -180,6 +180,7 @@ export type Database = {
           customer_id: string | null
           date: string
           id: string
+          invoice_file: string | null
           notes: string | null
           price: number
           product_name: string
@@ -191,6 +192,7 @@ export type Database = {
           customer_id?: string | null
           date?: string
           id?: string
+          invoice_file?: string | null
           notes?: string | null
           price?: number
           product_name: string
@@ -202,6 +204,7 @@ export type Database = {
           customer_id?: string | null
           date?: string
           id?: string
+          invoice_file?: string | null
           notes?: string | null
           price?: number
           product_name?: string

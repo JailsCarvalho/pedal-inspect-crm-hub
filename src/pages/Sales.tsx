@@ -6,6 +6,7 @@ import NewSaleDialog from "@/components/sales/NewSaleDialog";
 import { NewInspectionDialog } from "@/components/inspections/NewInspectionDialog";
 import { PlusCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const Sales = () => {
   const [openNewSaleDialog, setOpenNewSaleDialog] = useState(false);
@@ -15,16 +16,34 @@ const Sales = () => {
     url: "",
     open: false,
   });
+  const { toast } = useToast();
 
   const handleSaleCreated = () => {
     setRefreshKey((prev) => prev + 1);
+    toast({
+      title: "Venda criada",
+      description: "A venda foi registrada com sucesso.",
+    });
   };
 
   const handleInspectionCreated = () => {
     setRefreshKey((prev) => prev + 1);
+    toast({
+      title: "Inspeção criada",
+      description: "A inspeção foi registrada com sucesso.",
+    });
   };
 
   const handleViewInvoice = (invoiceFile: string) => {
+    if (!invoiceFile) {
+      toast({
+        title: "Fatura não disponível",
+        description: "Esta venda não possui uma fatura associada.",
+        variant: "default",
+      });
+      return;
+    }
+    
     setPdfPreview({ url: invoiceFile, open: true });
   };
 
@@ -78,12 +97,14 @@ const Sales = () => {
             <DialogTitle>Visualização da Fatura</DialogTitle>
           </DialogHeader>
           <div className="w-full h-full">
-            <iframe 
-              src={pdfPreview.url} 
-              className="w-full h-full border-0"
-              title="Visualização de Fatura"
-              allow="fullscreen"
-            />
+            {pdfPreview.url && (
+              <iframe 
+                src={pdfPreview.url} 
+                className="w-full h-full border-0"
+                title="Visualização de Fatura"
+                allow="fullscreen"
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
