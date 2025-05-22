@@ -8,7 +8,7 @@ import * as React from "react";
 
 const TOAST_LIMIT = 5;
 const TOAST_REMOVE_DELAY = 1000;
-const TOAST_AUTO_CLOSE = 1500; // Added auto-close delay
+const TOAST_AUTO_CLOSE = 1500; // Auto-close delay of 1.5 seconds
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -56,7 +56,7 @@ interface State {
 }
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
-const autoCloseTimeouts = new Map<string, ReturnType<typeof setTimeout>>(); // Added for auto-close
+const autoDismissTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
@@ -74,21 +74,21 @@ const addToRemoveQueue = (toastId: string) => {
   toastTimeouts.set(toastId, timeout);
 };
 
-// Add function for auto-dismiss after delay
+// Auto-dismiss function
 const addToAutoDismissQueue = (toastId: string) => {
-  if (autoCloseTimeouts.has(toastId)) {
+  if (autoDismissTimeouts.has(toastId)) {
     return;
   }
 
   const timeout = setTimeout(() => {
-    autoCloseTimeouts.delete(toastId);
+    autoDismissTimeouts.delete(toastId);
     dispatch({
       type: actionTypes.DISMISS_TOAST,
       toastId: toastId,
     });
   }, TOAST_AUTO_CLOSE);
 
-  autoCloseTimeouts.set(toastId, timeout);
+  autoDismissTimeouts.set(toastId, timeout);
 };
 
 export const reducer = (state: State, action: Action): State => {
@@ -113,8 +113,6 @@ export const reducer = (state: State, action: Action): State => {
     case actionTypes.DISMISS_TOAST: {
       const { toastId } = action;
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId);
       } else {
@@ -185,7 +183,7 @@ function toast(props: Toast) {
     },
   });
 
-  // Start auto-dismiss timer
+  // Auto-dismiss all toasts after the timeout
   addToAutoDismissQueue(id);
 
   return {
