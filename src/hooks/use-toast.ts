@@ -1,3 +1,4 @@
+
 import {
   Toast,
   ToastActionElement,
@@ -7,6 +8,7 @@ import * as React from "react";
 
 const TOAST_LIMIT = 5;
 const TOAST_REMOVE_DELAY = 1000;
+const TOAST_AUTO_CLOSE = 1500; // Added auto-close delay
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -54,6 +56,7 @@ interface State {
 }
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+const autoCloseTimeouts = new Map<string, ReturnType<typeof setTimeout>>(); // Added for auto-close
 
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
@@ -69,6 +72,23 @@ const addToRemoveQueue = (toastId: string) => {
   }, TOAST_REMOVE_DELAY);
 
   toastTimeouts.set(toastId, timeout);
+};
+
+// Add function for auto-dismiss after delay
+const addToAutoDismissQueue = (toastId: string) => {
+  if (autoCloseTimeouts.has(toastId)) {
+    return;
+  }
+
+  const timeout = setTimeout(() => {
+    autoCloseTimeouts.delete(toastId);
+    dispatch({
+      type: actionTypes.DISMISS_TOAST,
+      toastId: toastId,
+    });
+  }, TOAST_AUTO_CLOSE);
+
+  autoCloseTimeouts.set(toastId, timeout);
 };
 
 export const reducer = (state: State, action: Action): State => {
@@ -150,6 +170,7 @@ function toast(props: Toast) {
       type: actionTypes.UPDATE_TOAST,
       toast: { ...props, id },
     });
+    
   const dismiss = () =>
     dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
 
@@ -163,6 +184,9 @@ function toast(props: Toast) {
       },
     },
   });
+
+  // Start auto-dismiss timer
+  addToAutoDismissQueue(id);
 
   return {
     id: id,

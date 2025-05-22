@@ -109,7 +109,6 @@ const SalesList: React.FC<SalesListProps> = ({ onViewInvoice }) => {
     }
   };
 
-  // Fix the parameter order - required parameters must come before optional ones
   const handleViewInvoice = (e: React.MouseEvent, invoiceFile: string | undefined) => {
     e.stopPropagation(); // Prevent navigation
     if (invoiceFile) {
@@ -125,12 +124,7 @@ const SalesList: React.FC<SalesListProps> = ({ onViewInvoice }) => {
   };
 
   const handleViewDetails = (saleId: string) => {
-    toast({
-      title: "Detalhes da venda",
-      description: `Visualizando detalhes da venda ${saleId.substring(0, 8)}`,
-    });
-    // For now we'll just show a toast, but you could navigate to a details page
-    // navigate(`/sales/${saleId}`);
+    navigate(`/sales/${saleId}`);
   };
 
   const goToCustomerDetails = (e: React.MouseEvent, customerId?: string) => {
