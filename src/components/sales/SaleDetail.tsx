@@ -30,7 +30,7 @@ interface SaleDetail {
 }
 
 interface SaleDetailProps {
-  onViewInvoice?: (invoiceFile: string) => void;
+  onViewInvoice: (invoiceFile: string) => void;
 }
 
 const SaleDetail: React.FC<SaleDetailProps> = ({ onViewInvoice }) => {
@@ -106,16 +106,18 @@ const SaleDetail: React.FC<SaleDetailProps> = ({ onViewInvoice }) => {
 
   const handleViewInvoice = () => {
     if (sale?.invoice_file) {
-      if (onViewInvoice) {
-        onViewInvoice(sale.invoice_file);
-      } else {
-        window.open(sale.invoice_file, '_blank');
-      }
+      // Use the onViewInvoice prop to open PDF in a new tab
+      onViewInvoice(sale.invoice_file);
+      
+      // Show toast notification that will auto-dismiss
+      toast({
+        title: "Visualizando fatura",
+        description: "A fatura está sendo aberta.",
+      });
     } else {
       toast({
         title: "Fatura não disponível",
         description: "Esta venda não possui uma fatura associada.",
-        variant: "default",
       });
     }
   };
