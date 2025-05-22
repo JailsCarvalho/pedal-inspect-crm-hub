@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { 
   Table, 
   TableBody, 
-  TableCaption, 
   TableCell, 
   TableHead, 
   TableHeader, 
@@ -110,11 +109,11 @@ const SalesList: React.FC<SalesListProps> = ({ onViewInvoice }) => {
     }
   };
 
-  const handleViewInvoice = (invoiceFile: string | undefined, e: React.MouseEvent) => {
+  // Fix the parameter order - required parameters must come before optional ones
+  const handleViewInvoice = (e: React.MouseEvent, invoiceFile: string | undefined) => {
     e.stopPropagation(); // Prevent navigation
-    if (invoiceFile && onViewInvoice) {
-      onViewInvoice(invoiceFile);
-    } else if (invoiceFile) {
+    if (invoiceFile) {
+      // Open in a new tab instead of using the popup
       window.open(invoiceFile, '_blank');
     } else {
       toast({
@@ -134,7 +133,7 @@ const SalesList: React.FC<SalesListProps> = ({ onViewInvoice }) => {
     // navigate(`/sales/${saleId}`);
   };
 
-  const goToCustomerDetails = (customerId?: string, e: React.MouseEvent) => {
+  const goToCustomerDetails = (e: React.MouseEvent, customerId?: string) => {
     e.stopPropagation(); // Prevent other click handlers
     if (customerId) {
       navigate(`/clients/${customerId}`);
@@ -203,7 +202,7 @@ const SalesList: React.FC<SalesListProps> = ({ onViewInvoice }) => {
                   <Button 
                     variant="link" 
                     className="p-0 h-auto text-foreground hover:text-ambikes-orange"
-                    onClick={(e) => goToCustomerDetails(sale.customer_id, e)}
+                    onClick={(e) => goToCustomerDetails(e, sale.customer_id)}
                   >
                     {sale.customer_name}
                   </Button>
@@ -220,7 +219,7 @@ const SalesList: React.FC<SalesListProps> = ({ onViewInvoice }) => {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={(e) => handleViewInvoice(sale.invoice_file, e)} 
+                        onClick={(e) => handleViewInvoice(e, sale.invoice_file)} 
                         title="Ver fatura"
                       >
                         <FileText className="h-4 w-4" />

@@ -5,17 +5,12 @@ import { Button } from "@/components/ui/button";
 import NewSaleDialog from "@/components/sales/NewSaleDialog";
 import { NewInspectionDialog } from "@/components/inspections/NewInspectionDialog";
 import { PlusCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 const Sales = () => {
   const [openNewSaleDialog, setOpenNewSaleDialog] = useState(false);
   const [openNewInspectionDialog, setOpenNewInspectionDialog] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [pdfPreview, setPdfPreview] = useState<{ url: string; open: boolean }>({
-    url: "",
-    open: false,
-  });
   const { toast } = useToast();
 
   const handleSaleCreated = () => {
@@ -34,6 +29,7 @@ const Sales = () => {
     });
   };
 
+  // This function isn't needed anymore since we're opening the invoice in a new tab directly
   const handleViewInvoice = (invoiceFile: string) => {
     if (!invoiceFile) {
       toast({
@@ -44,11 +40,7 @@ const Sales = () => {
       return;
     }
     
-    setPdfPreview({ url: invoiceFile, open: true });
-  };
-
-  const handleClosePreview = () => {
-    setPdfPreview({ ...pdfPreview, open: false });
+    window.open(invoiceFile, '_blank');
   };
 
   return (
@@ -89,25 +81,6 @@ const Sales = () => {
         onOpenChange={setOpenNewInspectionDialog}
         onInspectionCreated={handleInspectionCreated}
       />
-
-      {/* PDF Preview Dialog */}
-      <Dialog open={pdfPreview.open} onOpenChange={handleClosePreview}>
-        <DialogContent className="max-w-4xl h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Visualização da Fatura</DialogTitle>
-          </DialogHeader>
-          <div className="w-full h-full">
-            {pdfPreview.url && (
-              <iframe 
-                src={pdfPreview.url} 
-                className="w-full h-full border-0"
-                title="Visualização de Fatura"
-                allow="fullscreen"
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
