@@ -106,14 +106,7 @@ const SaleDetail: React.FC<SaleDetailProps> = ({ onViewInvoice }) => {
 
   const handleViewInvoice = () => {
     if (sale?.invoice_file) {
-      // Use the onViewInvoice prop to open PDF in a new tab
       onViewInvoice(sale.invoice_file);
-      
-      // Show toast notification that will auto-dismiss
-      toast({
-        title: "Visualizando fatura",
-        description: "A fatura está sendo aberta.",
-      });
     } else {
       toast({
         title: "Fatura não disponível",

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -38,13 +37,17 @@ const EditInspectionForm = ({
 
   const handleSubmit = (data: any) => {
     try {
-      onSubmit({
+      // If a new file was selected, use its name, otherwise keep the existing one
+      const updatedData = {
         status: data.status,
         notes: data.notes,
         inspectionValue: parseFloat(data.inspectionValue) || 0,
         laborCost: parseFloat(data.laborCost) || 0,
-        invoiceFile: selectedFile ? selectedFile.name : data.invoiceFile,
-      });
+        invoiceFile: selectedFile ? `/invoices/${selectedFile.name}` : data.invoiceFile,
+      };
+
+      console.log("Submitting inspection data:", updatedData);
+      onSubmit(updatedData);
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -58,7 +61,9 @@ const EditInspectionForm = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      console.log("File selected:", file.name);
       setSelectedFile(file);
+      // Show the file name in the input
       form.setValue('invoiceFile', file.name);
     }
   };
@@ -146,6 +151,7 @@ const EditInspectionForm = ({
                   type="file" 
                   id="invoiceFile" 
                   className="hidden" 
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   onChange={handleFileChange}
                 />
                 <FormControl>

@@ -8,7 +8,7 @@ import * as React from "react";
 
 const TOAST_LIMIT = 5;
 const TOAST_REMOVE_DELAY = 1000;
-const TOAST_AUTO_CLOSE_DELAY = 1500; // Auto-close delay of 1.5 seconds
+const TOAST_AUTO_CLOSE_DELAY = 2000; // 2 seconds auto-close
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -56,7 +56,6 @@ interface State {
 }
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
-const autoDismissTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
@@ -72,24 +71,6 @@ const addToRemoveQueue = (toastId: string) => {
   }, TOAST_REMOVE_DELAY);
 
   toastTimeouts.set(toastId, timeout);
-};
-
-// Auto-dismiss function that will trigger after a delay
-const setAutoDismissTimeout = (toastId: string) => {
-  if (autoDismissTimeouts.has(toastId)) {
-    clearTimeout(autoDismissTimeouts.get(toastId));
-    autoDismissTimeouts.delete(toastId);
-  }
-
-  const timeout = setTimeout(() => {
-    dispatch({
-      type: actionTypes.DISMISS_TOAST,
-      toastId: toastId,
-    });
-    autoDismissTimeouts.delete(toastId);
-  }, TOAST_AUTO_CLOSE_DELAY);
-
-  autoDismissTimeouts.set(toastId, timeout);
 };
 
 export const reducer = (state: State, action: Action): State => {
@@ -184,8 +165,10 @@ function toast(props: Toast) {
     },
   });
 
-  // Start the auto-dismiss timeout immediately for every toast
-  setAutoDismissTimeout(id);
+  // Auto-dismiss toast after delay
+  setTimeout(() => {
+    dismiss();
+  }, TOAST_AUTO_CLOSE_DELAY);
 
   return {
     id: id,

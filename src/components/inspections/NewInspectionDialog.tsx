@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -86,6 +87,7 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
   const [useExistingBike, setUseExistingBike] = useState(false);
   const [selectedBike, setSelectedBike] = useState<string | null>(null);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -219,9 +221,11 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      // In a real application, this would upload the file to storage
-      // For now, we'll just set the filename in the form
-      form.setValue('invoiceFile', e.target.files[0].name);
+      const file = e.target.files[0];
+      console.log("Invoice file selected:", file.name);
+      setSelectedFile(file);
+      // Show just the filename for user reference
+      form.setValue('invoiceFile', file.name);
     }
   };
 
@@ -276,19 +280,26 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
       // Set next inspection date to exactly one year after the inspection date
       const nextInspectionDate = addYears(values.date, 1);
 
+      // Prepare invoice file path
+      const invoiceFilePath = selectedFile ? `/invoices/${selectedFile.name}` : null;
+
       // Now create the inspection
+      const inspectionData = {
+        bike_id: bikeId,
+        customer_id: customerId,
+        date: format(values.date, "yyyy-MM-dd'T'HH:mm:ss"),
+        next_inspection_date: format(nextInspectionDate, "yyyy-MM-dd'T'HH:mm:ss"),
+        status: values.status,
+        labor_cost: parseFloat(values.laborCost || "0"),
+        invoice_file: invoiceFilePath,
+        notes: values.notes || null,
+      };
+
+      console.log("Creating inspection with data:", inspectionData);
+
       const { error: inspectionError } = await supabase
         .from("inspections")
-        .insert({
-          bike_id: bikeId,
-          customer_id: customerId,
-          date: format(values.date, "yyyy-MM-dd'T'HH:mm:ss"),
-          next_inspection_date: format(nextInspectionDate, "yyyy-MM-dd'T'HH:mm:ss"),
-          status: values.status,
-          labor_cost: parseFloat(values.laborCost || "0"),
-          invoice_file: values.invoiceFile || null,
-          notes: values.notes || null,
-        });
+        .insert(inspectionData);
 
       if (inspectionError) {
         throw inspectionError;
@@ -300,6 +311,7 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
       });
       
       form.reset();
+      setSelectedFile(null);
       onOpenChange(false);
       if (onInspectionCreated) {
         onInspectionCreated();
@@ -623,6 +635,7 @@ export const NewInspectionDialog: React.FC<NewInspectionDialogProps> = ({
                       type="file" 
                       id="inspectionInvoiceFile" 
                       className="hidden" 
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                       onChange={handleFileChange}
                     />
                     <FormControl>

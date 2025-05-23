@@ -4,8 +4,8 @@ import SaleDetailComponent from "@/components/sales/SaleDetail";
 
 const SaleDetail = () => {
   const handleViewInvoice = (invoiceFile: string) => {
-    // Open directly in a new tab without any popups
-    window.open(invoiceFile, '_blank');
+    // Simply open the PDF in a new tab without any popup
+    window.open(invoiceFile, '_blank', 'noopener,noreferrer');
   };
 
   return (
